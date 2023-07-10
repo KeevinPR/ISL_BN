@@ -239,8 +239,7 @@ def NB_k_fold_with_steps(jumpSteps, selection_parameter, dataset, class_var):
         nx.draw_networkx_edge_labels(g,features_pos,edge_labels=labels, font_size = 7.5)
 
         figures_list.append((fig, scores, bn2))
-        #bnc.showROC_PR('datos/cars_discrete.csv')
-
+        
       else:
         steps_aux+=1
 

@@ -1,7 +1,15 @@
 import pandas as pd
 
 def from_CPT_to_df(data_string):
+    """
+    Converts a Conditional Probability Table (CPT) represented as a string into a pandas DataFrame.
 
+    Parameters:
+    - data_string (str): The string representation of the CPT.
+
+    Returns:
+    - df (pandas.DataFrame): The CPT data as a DataFrame.
+    """
     
     # Split the string into lines
     lines = data_string.strip().split('\n')
