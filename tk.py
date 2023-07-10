@@ -326,6 +326,27 @@ class EDAsWindow(tk.Toplevel):
         window.grab_set()
 
 class EDAsGenerationWindow(tk.Toplevel):
+    """
+    A class representing the window for displaying the generation information in the EDAs application.
+
+    Parameters:
+    - parent: The parent tkinter window.
+    - umda: An instance of the UMDA class.
+    - best_results: The best results from each generation.
+    - generation_information: The information of each generation.
+    - steps: The current step/generation.
+
+    Methods:
+    - __init__(self, parent, umda, best_results, generation_information, steps): Initializes the EDAsGenerationWindow.
+    - change_page(self, diff): Changes the page/generation.
+
+    Attributes:
+    - parent: The parent tkinter window.
+    - umda: An instance of the UMDA class.
+    - best_results: The best results from each generation.
+    - generation_information: The information of each generation.
+    - steps: The current step/generation.
+    """
     def __init__(self, parent, umda, best_results, generation_information, steps):
 
         super().__init__(parent)
@@ -373,6 +394,22 @@ class EDAsGenerationWindow(tk.Toplevel):
             self.destroy()
 
 class MainWindow(tk.Tk):
+    """
+    A class representing the main window of the application.
+
+    Methods:
+    - __init__(self): Initializes the MainWindow.
+    - open_window(self, model, jumpSteps, no_steps, selection_parameter, dataset, class_variable): Opens a new window based on the selected model.
+    - open_windowEDAs(self, n_generations, n_individuals, n_candidates, dataset, class_variable, fitness_metric): Opens a new window for the EDAs model.
+    - open_file(self): Opens a file dialog to choose a dataset.
+    - callbackInteger(self, P): Callback function for validating integer inputs.
+    - callback(self, var, index, mode): Callback function for handling changes in the dropdown selection.
+
+    Attributes:
+    - dataset_name: The name of the chosen dataset.
+    - model: The selected model.
+    - frame: The tkinter frame.
+    """
     def __init__(self):
         super().__init__()
 

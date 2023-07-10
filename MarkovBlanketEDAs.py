@@ -21,6 +21,7 @@ import time
 class UMDA:
 
     class Solution:
+        #Class for save solutions
         def __init__(self, chain, fitness, bn) -> None:
             self.chain = chain
             self.fitness = fitness
@@ -28,20 +29,19 @@ class UMDA:
 
 
     def __init__(self, selected_candidates, num_individuals, n_generations, dataset, class_variable, fitness_metric) -> None:
+        #Initiate all parameters based on the parameters introduced by user
         self.selected_candidates = selected_candidates
         self.num_individuals = num_individuals
         self.n_generations = n_generations
         self.dataset = pd.read_csv(dataset)
         self.class_variable = class_variable
         self.fitness_metric = fitness_metric
-        #Crear la lista de nodos teniendo las features primero y la última la variable clase
         columns = list(self.dataset.columns)
         columns.remove(self.class_variable)
         columns.append(self.class_variable)
         self.nodes_list = columns
         self.nodes_number = len(columns)-1
         self.edges_number = int(self.nodes_number * (self.nodes_number-1) / 2)
-        #Crear diccionario aristas
         self.edges_dictionary = dict()
         aux = self.nodes_number
         for i in range(self.nodes_number):
@@ -49,8 +49,6 @@ class UMDA:
                 self.edges_dictionary[aux] = (self.nodes_list[i],self.nodes_list[j])
                 aux +=1
         self.fitness_dictionary = {}
-        #Debido a que algunos valores pueden aparecer pocas veces y no salir en los datos del entrenamiento, 
-        # incluimos una instancia de todos los valores posibles al df_train
         self.df2 = pd.DataFrame()
 
         for column in self.dataset.columns:
@@ -89,9 +87,17 @@ class UMDA:
 
         validation = self.validate_chain(individual)
         return self.Solution(validation[0], *self.obtain_fitness(*validation))
-        #return self.Solution(individual,sum(individual))
 
     def validate_chain(self, chain):
+        """
+        Validates the given chain by creating a pybnesian.Dag object and adding nodes and arcs according to the chain checking if they can be added updating the chain.
+
+        Parameters:
+        - chain (list): The chain representing the Bayesian network structure.
+
+        Returns:
+        - validated_chain (tuple): A tuple containing the validated chain, the list of nodes, and the list of arcs in the Bayesian network.
+        """
         dag = pybnesian.Dag()
         dag.add_node(self.class_variable)
         nodes_list = list(self.nodes_list)
@@ -138,7 +144,7 @@ class UMDA:
                 else:
                     chain[aux_pos] = 0
 
-        #Comprobar las esposas
+        #Chech spouses
         
         random_number = random.uniform(0, self.nodes_number-1)
         for pos in range(self.nodes_number):
@@ -153,6 +159,15 @@ class UMDA:
         return (chain, dag.nodes(), dag.arcs())
     
     def list_arcs_contains_node(self, node):
+        """
+        Returns a list of positions corresponding to the arcs that contain the given node.
+
+        Parameters:
+        - node (str): The node name.
+
+        Returns:
+        - pos_list (list): A list of positions corresponding to the arcs that contain the given node.
+        """
         pos_list = []
         for pos in range(self.nodes_number, self.nodes_number + self.edges_number):
             if self.edges_dictionary[pos][0] == node or self.edges_dictionary[pos][1] == node:
@@ -160,6 +175,16 @@ class UMDA:
         return pos_list
 
     def auxiliar_fun(self, chain, node):
+        """
+        Calculates the count of edges connected to a given node in a chain.
+
+        Parameters:
+        - chain (list): The chain configuration.
+        - node (str): The node name.
+
+        Returns:
+        - res (int): The count of edges connected to the given node.
+        """
         res = 0
 
         for pos in range(self.nodes_number, self.nodes_number + self.edges_number):
@@ -170,6 +195,18 @@ class UMDA:
 
     
     def obtain_fitness(self, chain, nodes, arcs):
+        """
+        Obtain the fitness score of a Bayesian network chain using the pyAgrum library.
+
+        Args:
+            chain (list): The chain representing the Bayesian network structure.
+            nodes (list): The list of nodes in the network.
+            arcs (list): The list of arcs (edges) in the network.
+
+        Returns:
+            float: The fitness score of the Bayesian network.
+
+        """
         if tuple(chain) in self.fitness_dictionary:
             return self.fitness_dictionary[tuple(chain)]
         else:
@@ -206,6 +243,18 @@ class UMDA:
             return (float(cross_val_to_number(scores)), bn2)
     
     def obtain_fitness_pybnessian(self, chain, nodes, arcs):
+        """
+        Obtain the fitness score of a Bayesian network chain using the pybnessian library.
+
+        Args:
+            chain (list): The chain representing the Bayesian network structure.
+            nodes (list): The list of nodes in the network.
+            arcs (list): The list of arcs (edges) in the network.
+
+        Returns:
+            float: The fitness score of the Bayesian network.
+
+        """
         start_time_learning = time.time()
         bn = DiscreteBN(nodes)
         
@@ -225,20 +274,38 @@ class UMDA:
         k = next(kf.split(df))
         df_train = df_aux.iloc[k[0]]
         df_test = df_aux.iloc[k[1]]
-        #df_test = df_aux.iloc[k[1][0:100]]
         score = likellihood_weighting(df_train, df_test, bn, self.class_variable)
         print("FOR LEARNING:--- %s seconds ---" % (time.time() - start_time_learning))
         return float("{:.4f}".format(score))
 
     def best_candidates_selection(self, population):
+        """
+        Select the best candidates from the population based on their fitness scores (taking the best ones).
+
+        Args:
+            population (list): The list of individuals in the population.
+
+        Returns:
+            list: The selected best candidates from the population.
+
+        """
         population.sort(key=lambda x: x.fitness, reverse=True)
         return population[:self.selected_candidates]
     
     def get_new_distribution(self, selected_candidates):
+        """
+        Calculate the new distribution based on the selected candidates.
+
+        Args:
+            selected_candidates (list): The list of selected candidates (individuals).
+
+        Returns:
+            list: The new distribution matrix.
+
+        """
         dis1 = [[0,0,0] for _ in range(self.nodes_number)]
         dis2 = [[0,0] for _ in range(self.edges_number)]
         distribution = dis1+dis2
-        #Revisar esto porque creo que caundo sale un 0 como o-1 = -1 se pone la probabilidad en el 3 o en el 2.
         for candidate in selected_candidates:
             for index1 in range(len(candidate.chain)):
                 item1 = candidate.chain[index1]
@@ -254,6 +321,16 @@ class UMDA:
     
        
     def get_graph(self, chain):
+        """
+        Create a directed graph based on the given chain representation.
+
+        Args:
+            chain (list): The chain representation of the Bayesian network.
+
+        Returns:
+            nx.DiGraph: The created directed graph representing the Bayesian network.
+
+        """
         g = nx.DiGraph()
         g.add_node(self.class_variable)
         for x in range(self.nodes_number):
@@ -274,6 +351,16 @@ class UMDA:
         return g
     
     def from_chain_to_graph(self, chain):
+        """
+            Create a matplotlib graph of the Bayesian network representation from a given chain of the individual.
+
+            Args:
+                chain (list): The chain representing the Bayesian network.
+
+            Returns:
+                matplotlib.figure.Figure: The generated matplotlib Figure object.
+
+        """
         
         fig = plt.figure()
         g = self.get_graph(chain)
@@ -299,6 +386,20 @@ class UMDA:
         return fig  
     
     def graph_between_chains(self, chain1, chain2):
+        """
+        Create a graph displaying the differences between two chains.
+
+        Args:
+            chain1 (list): The first chain representing a Bayesian network.
+            chain2 (list): The second chain representing a Bayesian network.
+
+        Returns:
+            matplotlib.figure.Figure: The generated matplotlib figure displaying the graph. 
+            Red nodes/edges are missing edges in chain2 that are in chain1
+            Green nodes/edges are new chains added in chain2
+            Black nodes/edges are in both gens
+
+        """
 
         fig = plt.figure()
         
@@ -353,6 +454,16 @@ class UMDA:
         return fig
 
     def from_generation_to_graph(self, generation_dict):
+        """
+        Create a matplotlib graph of the network from a dictionary representing the number of appearances of edges and nodes in a generation.
+
+        Args:
+            generation_dict (dict): Dictionary containing the count of edges and nodes in the generation.
+
+        Returns:
+            matplotlib.figure.Figure: The generated matplotlib Figure object.
+
+        """
         g = nx.DiGraph()
         g.add_node(self.class_variable)
         fig = plt.figure()
@@ -391,6 +502,7 @@ class UMDA:
 
     
     def old_graph_between_generations(self, prev_generation_dict, actual_gen_dict):
+        
         g = nx.DiGraph()
         g.add_node(self.class_variable)
         fig = plt.figure()
@@ -404,14 +516,6 @@ class UMDA:
 
         for x in actual_gen_dict:
             diff_gen_info[x] = (actual_gen_dict[x]- prev_generation_dict[x])
-
-        #print('-------------------------------------------------')
-        #pprint.pprint(diff_gen_info)
-        #print('-------------------------------------------------')
-        #pprint.pprint(prev_generation_dict)
-        #print('-------------------------------------------------')
-        #pprint.pprint(actual_gen_dict)
-
 
         for x in diff_gen_info:
             if diff_gen_info[x] > 0 and prev_generation_dict[x] == 0:
@@ -457,7 +561,6 @@ class UMDA:
         nx.draw_networkx_nodes(g, pos= pos, node_color= "#CCCCFF", nodelist= [self.class_variable], node_size= 1500, margins= 0.2)
 
         #Draw edges
-        #print(red_edges_in_g)
         nx.draw_networkx_edges(g, pos = pos, edgelist= black_edges_in_g, width= [(actual_gen_dict[x]/self.num_individuals) * 1.5 for x in black_edges_in_g], arrows = True, 
                             node_size= [1500]+node_size, connectionstyle='arc3,rad=0.05')
         
@@ -471,6 +574,18 @@ class UMDA:
         return fig
       
     def count_edges(self, group):
+        """
+        Count the occurrences of edges in a given group of individuals.
+
+        Args:
+            group (list): The group of individuals.
+
+        Returns:
+            list: The distribution of edge occurrences. The distribution is a list of lists, where each inner list represents the counts for a node or an edge.
+            The first  lists correspond to node counts, and the remaining lists correspond to edge counts.
+
+        """
+
         dis1 = [[0,0,0] for _ in range(self.nodes_number)]
         dis2 = [[0,0] for _ in range(self.edges_number)]
         distribution = dis1+dis2
@@ -482,6 +597,18 @@ class UMDA:
         return distribution
     
     def print_data_generation(self, generation):
+
+        """
+            Save the count of individuals in a generation in a dictionary, categorized by nodes and edges.
+
+            Args:
+                generation (list): The generation of individuals.
+
+            Returns:
+                dict: A dictionary containing the count of individuals for each node and edge in the generation.
+                    The dictionary keys are node_names representing the nodes or tuples representing edges, and the values are the respective counts.
+
+        """
 
         count_individuals = self.count_edges(generation)
         nodes = count_individuals[:self.nodes_number]

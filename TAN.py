@@ -13,6 +13,20 @@ matplotlib.use('SVG')
 
 def NB_TAN_k_fold_with_steps(jumpSteps, selection_parameter, dataset, class_var):
 
+  """
+    Performs TAN classifier with k-fold cross-validation and visualization of the step-wise process.
+
+    Args:
+        jumpSteps (int): Number of steps to jump before recalculating weights and scores.
+        selection_parameter (str): Parameter for feature selection. Valid options: "Score" or "MI" (Mutual Information).
+        dataset (str): Path to the dataset file.
+        class_variable (str): The class variable of the classification problem.
+
+    Returns:
+        figures_list (list): List of tuples containing the figure, scores, and learned Bayesian network for each step.
+        
+  """
+
   importr('utils')
   importr('bnclassify')
 
@@ -73,7 +87,7 @@ def NB_TAN_k_fold_with_steps(jumpSteps, selection_parameter, dataset, class_var)
   df = pd.read_csv(dataset)
   df2 = pd.DataFrame()
 
-  #Añadir las aristas del Naive Bayes y crear la red bayesiana
+  a
 
   g.clear()
 

@@ -45,6 +45,18 @@ def get_inference_graph(bn, es):
     return fig
 
 def likellihood_weighting(df_train, df_test, bn, class_variable):
+    """
+    Computes the accuracy of a Bayesian network classifier using the Likelihood Weighting algorithm.
+
+    Parameters:
+    - df_train (pandas.DataFrame): The training dataset.
+    - df_test (pandas.DataFrame): The testing dataset.
+    - bn (pyAgrum.BayesNet): The Bayesian network model.
+    - class_variable (str): The name of the class variable.
+
+    Returns:
+    - accuracy (float): The accuracy of the classifier as a percentage.
+    """
    
     order_list = bn.graph().topological_sort()
     
