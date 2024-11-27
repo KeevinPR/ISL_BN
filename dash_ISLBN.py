@@ -13,7 +13,6 @@ from inference import get_inference_graph
 from MarkovBlanketEDAs import UMDA
 
 # Initialize the Dash app
-# Initialize the Dash app
 app = dash.Dash(
     __name__,
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
@@ -59,6 +58,28 @@ app.layout = html.Div([
 
     # Output display
     html.Div(id='model-output'),
+
+    # Hidden inputs to prevent callback errors
+    html.Div([
+        dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
+        dcc.Checklist(id='no-steps', options=[{'label': 'Yes', 'value': 'yes'}], value=[], style={'display': 'none'}),
+        dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
+        dcc.Dropdown(id='class-variable', style={'display': 'none'}),
+        dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
+        dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
+        dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
+        dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
+    ]),
+
+    # Hidden buttons
+    html.Div([
+        html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
+        html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
+        html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
+        html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
+        html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
+        html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
+    ]),
 
     # Hidden stores to keep the state
     dcc.Store(id='uploaded-data-store'),
@@ -194,6 +215,7 @@ def update_parameters(model, data_json):
     State('current-step-store', 'data'),
     State('edas-results-store', 'data'),
     State('current-generation-store', 'data'),
+    State('bn-model-store', 'data'),
     State('model-dropdown', 'value'),
     State('uploaded-data-store', 'data'),
     State('jump-steps', 'value'),
@@ -211,6 +233,7 @@ def handle_model_run_and_navigation(
     prev_gen_clicks, next_gen_clicks, choose_model_edas_clicks,
     model_results_data, current_step,
     edas_results_data, current_generation,
+    bn_model_data,
     model, data_json,
     jump_steps, no_steps, selection_parameter, class_variable,
     n_generations, n_individuals, n_candidates, fitness_metric
@@ -221,11 +244,11 @@ def handle_model_run_and_navigation(
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     # Initialize return values
-    model_results_data_out = dash.no_update
-    current_step_out = dash.no_update
-    edas_results_data_out = dash.no_update
-    current_generation_out = dash.no_update
-    bn_model_data_out = dash.no_update
+    model_results_data_out = model_results_data
+    current_step_out = current_step
+    edas_results_data_out = edas_results_data
+    current_generation_out = current_generation
+    bn_model_data_out = bn_model_data
 
     if button_id == 'run-button':
         if data_json is None:
@@ -235,8 +258,15 @@ def handle_model_run_and_navigation(
             if class_variable is None:
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
             if model == 'Naive Bayes':
+                # Ensure parameters have default values if None
+                jump_steps = jump_steps or 0
+                selection_parameter = selection_parameter or 'Mutual Information'
+                no_steps = no_steps or []
                 figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
             elif model == 'TAN':
+                jump_steps = jump_steps or 0
+                selection_parameter = selection_parameter or 'Mutual Information'
+                no_steps = no_steps or []
                 figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
             model_results_data_out = {
                 'figures_list': figures_list,
@@ -246,6 +276,11 @@ def handle_model_run_and_navigation(
         elif model == 'EDAs':
             if class_variable is None:
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            # Ensure parameters have default values if None
+            n_generations = n_generations or 1
+            n_individuals = n_individuals or 10
+            n_candidates = n_candidates or 5
+            fitness_metric = fitness_metric or 'Accuracy'
             umda = UMDA(n_candidates, n_individuals, n_generations, df, class_variable, fitness_metric)
             best_results, generation_information = umda.execute_umda()
             edas_results_data_out = {
@@ -257,9 +292,10 @@ def handle_model_run_and_navigation(
     elif button_id in ['prev-step-button', 'next-step-button']:
         if model_results_data is None or current_step is None:
             raise dash.exceptions.PreventUpdate
+        figures_list = model_results_data['figures_list']
         if button_id == 'prev-step-button' and current_step > 0:
             current_step_out = current_step - 1
-        elif button_id == 'next-step-button' and current_step < len(model_results_data['figures_list']) - 1:
+        elif button_id == 'next-step-button' and current_step < len(figures_list) - 1:
             current_step_out = current_step + 1
     elif button_id == 'choose-model-button':
         if model_results_data is None or current_step is None:
@@ -310,7 +346,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     ])
     return content
 
-# Single Callback to Update Model Output
+# Callback to update model output
 @app.callback(
     Output('model-output', 'children'),
     Input('model-results-store', 'data'),
