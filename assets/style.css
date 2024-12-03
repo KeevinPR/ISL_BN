@@ -23,6 +23,7 @@ button {
     background-color: #00A2E1; /* Color azul cig */
     color: white;
     border: none;
+    margin: 15px;
     padding: 10px 20px;
     font-size: 16px;
     border-radius: 5px;
