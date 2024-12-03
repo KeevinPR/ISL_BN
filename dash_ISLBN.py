@@ -1,16 +1,21 @@
-import dash
+import dash 
 from dash import dcc, html, Input, Output, State, callback_context
 import pandas as pd
 import base64
 import io
 from operator import attrgetter
 import matplotlib.pyplot as plt
+import pyAgrum as gum
+
+import ast
+
 
 # Import custom modules
 from NB import NB_k_fold_with_steps, cross_val_to_number
 from TAN import NB_TAN_k_fold_with_steps
 from inference import get_inference_graph
 from MarkovBlanketEDAs import UMDA
+
 
 # Initialize the Dash app
 app = dash.Dash(
@@ -118,8 +123,8 @@ def update_output(contents, filename):
 )
 def update_parameters(model, data_json):
     if data_json is None:
-        return html.Div('Please upload a dataset first.', style={'color': 'red', 'textAlign': 'center'})
-    df = pd.read_json(data_json, orient='split')
+        return html.Div('Please upload a dataset first.', style={'color': 'red', 'textAlign': 'center', 'margin-top':'5px'})
+    df = pd.read_json(io.StringIO(data_json), orient='split')
     if model in ['Naive Bayes', 'TAN']:
         return html.Div([
             html.H3("Model Parameters", style={'textAlign': 'center'}),
@@ -248,14 +253,18 @@ def handle_model_run_and_navigation(
     current_step_out = current_step
     edas_results_data_out = edas_results_data
     current_generation_out = current_generation
-    bn_model_data_out = bn_model_data
+    bn_model_data_out = bn_model_data  # Corrected initialization
+
+    print(f"Button pressed: {button_id}")
 
     if button_id == 'run-button':
         if data_json is None:
+            print("No data uploaded.")
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-        df = pd.read_json(data_json, orient='split')
+        df = pd.read_json(io.StringIO(data_json), orient='split')
         if model in ['Naive Bayes', 'TAN']:
             if class_variable is None:
+                print("Class variable not selected.")
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
             if model == 'Naive Bayes':
                 # Ensure parameters have default values if None
@@ -269,55 +278,84 @@ def handle_model_run_and_navigation(
                 no_steps = no_steps or []
                 figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
             model_results_data_out = {
-                'figures_list': figures_list,
+                'figures_list': serialize_figures_list(figures_list),
                 'no_steps': 'yes' in no_steps
             }
             current_step_out = 0
+            print("Naive Bayes/TAN model executed successfully.")
         elif model == 'EDAs':
             if class_variable is None:
+                print("Class variable not selected.")
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
             # Ensure parameters have default values if None
             n_generations = n_generations or 1
             n_individuals = n_individuals or 10
             n_candidates = n_candidates or 5
             fitness_metric = fitness_metric or 'Accuracy'
-            umda = UMDA(n_candidates, n_individuals, n_generations, df, class_variable, fitness_metric)
+            # Convert DataFrame to CSV string and wrap in StringIO
+            csv_string = df.to_csv(index=False)
+            csv_buffer = io.StringIO(csv_string)
+            umda = UMDA(n_candidates, n_individuals, n_generations, csv_buffer, class_variable, fitness_metric)
             best_results, generation_information = umda.execute_umda()
+            # Serialize dataset
+            dataset_json = data_json  # Already in JSON format
             edas_results_data_out = {
-                'umda': umda,
-                'best_results': best_results,
-                'generation_information': generation_information
+                'umda': serialize_umda(umda, dataset_json),
+                'best_results': [serialize_solution(sol) for sol in best_results],
+                'generation_information': serialize_generation_information(generation_information)
             }
             current_generation_out = 0
+            print("EDAs model executed successfully.")
     elif button_id in ['prev-step-button', 'next-step-button']:
         if model_results_data is None or current_step is None:
+            print("Model results or current step not available.")
             raise dash.exceptions.PreventUpdate
         figures_list = model_results_data['figures_list']
         if button_id == 'prev-step-button' and current_step > 0:
             current_step_out = current_step - 1
+            print("Moved to previous step.")
         elif button_id == 'next-step-button' and current_step < len(figures_list) - 1:
             current_step_out = current_step + 1
+            print("Moved to next step.")
     elif button_id == 'choose-model-button':
         if model_results_data is None or current_step is None:
+            print("Model results or current step not available.")
             raise dash.exceptions.PreventUpdate
         figures_list = model_results_data['figures_list']
-        bn = figures_list[current_step][2]
-        bn_model_data_out = bn
+        bn_str = figures_list[current_step]['bn']
+        bn = gum.BayesNet()
+        try:
+            bn.loadBN(bn_str)
+            print("Bayesian Network loaded from string.")
+        except Exception as e:
+            print(f"Error loading BN from string: {e}")
+            raise
+        bn_model_data_out = serialize_bayesnet(bn)
+        print("Bayesian Network serialized successfully.")
+
     elif button_id in ['prev-generation-button', 'next-generation-button']:
         if edas_results_data is None or current_generation is None:
+            print("EDAs results or current generation not available.")
             raise dash.exceptions.PreventUpdate
         if button_id == 'prev-generation-button' and current_generation > 0:
             current_generation_out = current_generation - 1
+            print("Moved to previous generation.")
         elif button_id == 'next-generation-button' and current_generation < len(edas_results_data['generation_information']) - 1:
             current_generation_out = current_generation + 1
+            print("Moved to next generation.")
     elif button_id == 'choose-model-button-edas':
         if edas_results_data is None:
+            print("EDAs results not available.")
             raise dash.exceptions.PreventUpdate
-        best_res = max(edas_results_data['best_results'], key=attrgetter('fitness'))
+        best_results_data = edas_results_data['best_results']
+        best_results = [deserialize_solution(sol_data) for sol_data in best_results_data]
+        best_res = max(best_results, key=attrgetter('fitness'))
         bn = best_res.bn
-        bn_model_data_out = bn
+        bn_model_data_out = serialize_bayesnet(bn)
+        print("Best EDAs model serialized successfully.")
 
     return model_results_data_out, current_step_out, edas_results_data_out, current_generation_out, bn_model_data_out
+
 
 # Callback for Inference
 @app.callback(
@@ -331,12 +369,13 @@ def handle_model_run_and_navigation(
 def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     if bn_model_data is None:
         raise dash.exceptions.PreventUpdate
+    bn = deserialize_bayesnet(bn_model_data)
     evidence = {}
     for value, id_dict in zip(evidence_values, evidence_ids):
         if value != '':
             var = id_dict['index']
             evidence[var] = value
-    bn = bn_model_data
+    # Use the deserialized Bayesian Network for inference
     tuple_list = [(var, evidence.get(var, '')) for var in bn.names()]
     figure = get_inference_graph(bn, tuple_list)
     img = fig_to_base64_image(figure)
@@ -345,6 +384,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
         html.Img(src='data:image/png;base64,{}'.format(img), style={'display': 'block', 'margin': '0 auto'}),
     ])
     return content
+
 
 # Callback to update model output
 @app.callback(
@@ -380,13 +420,13 @@ def fig_to_base64_image(fig):
     return img_base64
 
 def display_step(figures_list, step_index):
-    figure = figures_list[step_index][0]
-    score = cross_val_to_number(figures_list[step_index][1])
-    img = fig_to_base64_image(figure)
+    data = figures_list[step_index]
+    img_data = data['fig']
+    score = cross_val_to_number(data['scores'])
     total_steps = len(figures_list)
     return html.Div([
         html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img), style={'display': 'block', 'margin': '0 auto'}),
+        html.Img(src='data:image/png;base64,{}'.format(img_data), style={'display': 'block', 'margin': '0 auto'}),
         html.P(f'Score: {score}', style={'textAlign': 'center'}),
         html.Div([
             html.Button('Previous', id='prev-step-button', n_clicks=0),
@@ -395,9 +435,12 @@ def display_step(figures_list, step_index):
         ], style={'textAlign': 'center'}),
     ])
 
+
 def display_edas_generations(edas_results_data, generation_index):
-    umda = edas_results_data['umda']
-    best_results = edas_results_data['best_results']
+    umda_data = edas_results_data['umda']
+    umda = deserialize_umda(umda_data)
+    best_results_data = edas_results_data['best_results']
+    best_results = [deserialize_solution(sol_data) for sol_data in best_results_data]
     total_generations = len(edas_results_data['generation_information'])
     figure = umda.from_chain_to_graph(best_results[generation_index].chain)
     img = fig_to_base64_image(figure)
@@ -417,8 +460,22 @@ def display_edas_generations(edas_results_data, generation_index):
     ], style={'textAlign': 'center'}))
     return html.Div(content)
 
+def serialize_figures_list(figures_list):
+    serialized_list = []
+    for fig, scores, bn2 in figures_list:
+        img_data = fig_to_base64_image(fig)
+        bn_serialized = serialize_bayesnet(bn2)
+        serialized_list.append({
+            'fig': img_data,
+            'scores': scores,
+            'bn': bn_serialized
+        })
+    return serialized_list
+
+
+
 def display_inference_window(bn_model_data):
-    bn = bn_model_data
+    bn = deserialize_bayesnet(bn_model_data)
     variables = bn.names()
     evidence_selection = []
     for var in variables:
@@ -440,6 +497,188 @@ def display_inference_window(bn_model_data):
         html.Div(evidence_selection, style={'columnCount': 2}),
         html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0),
     ])
+
+# Serialization functions
+def serialize_solution(solution):
+    bn_serialized = serialize_bayesnet(solution.bn)
+    return {
+        'chain': solution.chain,
+        'fitness': solution.fitness,
+        'bn': bn_serialized
+    }
+
+
+def deserialize_solution(data):
+    bn = deserialize_bayesnet(data['bn'])
+    solution = UMDA.Solution(chain=data['chain'], fitness=data['fitness'], bn=bn)
+    return solution
+
+def serialize_generation_information(generation_info):
+    # Convert list of dictionaries with tuple keys to string keys
+    serialized_info = []
+    for gen_dict in generation_info:
+        serialized_dict = {str(k): v for k, v in gen_dict.items()}
+        serialized_info.append(serialized_dict)
+    return serialized_info
+
+def serialize_umda(umda, dataset_json):
+    # Convert tuple keys to strings
+    edges_dict_serialized = {str(k): v for k, v in umda.edges_dictionary.items()}
+    return {
+        'class_variable': umda.class_variable,
+        'nodes_list': umda.nodes_list,
+        'edges_dictionary': edges_dict_serialized,
+        'dataset': dataset_json  # Include dataset
+    }
+
+    
+def deserialize_generation_information(serialized_info):
+    deserialized_info = []
+    for serialized_dict in serialized_info:
+        deserialized_dict = {ast.literal_eval(k): v for k, v in serialized_dict.items()}
+        deserialized_info.append(deserialized_dict)
+    return deserialized_info
+
+
+def deserialize_umda(data):
+    # Convert string keys back to tuple keys
+    edges_dict = {ast.literal_eval(k): v for k, v in data['edges_dictionary'].items()}
+    dataset_json = data['dataset']
+    df = pd.read_json(io.StringIO(dataset_json), orient='split')
+    csv_buffer = io.StringIO(df.to_csv(index=False))
+    umda = UMDA(
+        selected_candidates=None,
+        num_individuals=None,
+        n_generations=None,
+        dataset=csv_buffer,  # Pass dataset buffer
+        class_variable=data['class_variable'],
+        fitness_metric=None
+    )
+    umda.nodes_list = data['nodes_list']
+    umda.edges_dictionary = edges_dict
+    return umda
+
+def serialize_bayesnet(bn):
+    # Extract nodes and their variable types
+    nodes = {}
+    for node in bn.nodes():
+        variable = bn.variable(node)
+        labels = variable.labels()
+        # Verify uniqueness of labels
+        if len(labels) != len(set(labels)):
+            print(f"Warning: Duplicate labels found in variable '{variable.name()}': {labels}")
+        nodes[str(node)] = {
+            'name': variable.name(),
+            'description': variable.description(),
+            'labels': labels
+        }
+
+    # Extract edges
+    edges = [[str(parent), str(child)] for parent, child in bn.arcs()]
+
+    # Extract CPTs
+    cpts = {}
+    for node in bn.nodes():
+        cpt = bn.cpt(node)
+        flat_cpt = cpt.toarray().flatten().tolist()  # Corrected method
+        cpts[str(node)] = flat_cpt  # Store flat list of CPT values
+
+        # Debug print
+        print(f"CPT for node '{bn.variable(node).name()}' has size {cpt.toarray().size}, flat_cpt length: {len(flat_cpt)}")
+
+    # Combine all information
+    serialized_bn = {
+        'nodes': nodes,
+        'edges': edges,
+        'cpts': cpts
+    }
+    return serialized_bn
+
+def deserialize_bayesnet(serialized_bn):
+    bn = gum.BayesNet()
+    node_id_map = {}
+
+    # Reconstruct nodes and variables
+    for node_id_str, node_info in serialized_bn['nodes'].items():
+        labels = node_info['labels']
+        print(f"Deserializing node '{node_info['name']}' with labels: {labels}")
+
+        # Check for duplicate labels
+        if len(labels) != len(set(labels)):
+            print(f"Duplicate labels found for variable '{node_info['name']}': {labels}")
+            # Handle duplicates by appending a unique suffix
+            seen_labels = {}
+            unique_labels = []
+            for label in labels:
+                if label in seen_labels:
+                    seen_labels[label] += 1
+                    new_label = f"{label}_{seen_labels[label]}"
+                    unique_labels.append(new_label)
+                    print(f"Renamed duplicate label '{label}' to '{new_label}'")
+                else:
+                    seen_labels[label] = 0
+                    unique_labels.append(label)
+            print(f"Labels after ensuring uniqueness: {unique_labels}")
+        else:
+            unique_labels = labels.copy()
+            print(f"No duplicate labels for variable '{node_info['name']}'. Using labels as is.")
+
+        # Ensure unique_labels are indeed unique
+        if len(unique_labels) != len(set(unique_labels)):
+            raise ValueError(f"Labels are not unique after processing for variable '{node_info['name']}': {unique_labels}")
+
+        num_labels = len(unique_labels)
+
+        # Create variable with num_labels and temporary unique labels
+        variable = gum.LabelizedVariable(node_info['name'], node_info['description'], num_labels)
+        # Assign temporary labels that do not conflict
+        for i in range(num_labels):
+            temp_label = f"__temp_label_{i}__"
+            try:
+                variable.changeLabel(i, temp_label)
+            except gum.DuplicateElement:
+                print(f"Duplicate temporary label '{temp_label}' detected for variable '{node_info['name']}'")
+                raise
+
+        # Now change labels to unique_labels
+        for i, label in enumerate(unique_labels):
+            try:
+                variable.changeLabel(i, label)
+                print(f"Assigned label '{label}' to position {i} of variable '{node_info['name']}'")
+            except gum.DuplicateElement:
+                print(f"Duplicate label '{label}' detected when assigning to variable '{node_info['name']}'")
+                raise
+
+        # Verify that labels are correctly assigned
+        print(f"Variable '{variable.name()}': labels = {variable.labels()}, domain size = {variable.domainSize()}")
+
+        # Add variable to the Bayesian Network
+        node_id = bn.add(variable)
+        node_id_map[node_id_str] = node_id
+
+    # Reconstruct edges
+    for parent_id_str, child_id_str in serialized_bn['edges']:
+        parent_id = node_id_map[parent_id_str]
+        child_id = node_id_map[child_id_str]
+        bn.addArc(parent_id, child_id)
+
+    # Reconstruct CPTs
+    for node_id_str, flat_cpt_list in serialized_bn['cpts'].items():
+        node_id = node_id_map[node_id_str]
+        # Ensure the CPT size matches
+        expected_size = bn.cpt(node_id).toarray().size
+        print(f"CPT for node '{bn.variable(node_id).name()}' expected size: {expected_size}, flat_cpt_list length: {len(flat_cpt_list)}")
+        if len(flat_cpt_list) != expected_size:
+            raise ValueError(
+                f"Expected CPT size {expected_size}, but got {len(flat_cpt_list)} for node '{bn.variable(node_id).name()}'"
+            )
+        # Convert values to float if necessary
+        flat_cpt_list = [float(value) for value in flat_cpt_list]
+        # Fill CPT with the flattened list
+        bn.cpt(node_id).fillWith(flat_cpt_list)
+
+    return bn
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8053)
