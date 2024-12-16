@@ -24,7 +24,8 @@ def get_inference_graph(bn, es):
     # Configure gum library to use 'png' format for graph rendering
     gum.config["notebook", "graph_format"] = "png"
     # Create a dictionary of evidence values
-    evs_dict = {e[0]: e[1].get() for e in es if e[1].get() != ""}
+    evs_dict = {e[0]: e[1] for e in es if e[1] != ""}
+    #evs_dict = {e[0]: e[1].get() for e in es if e[1].get() != ""}
     size = 8
     # Adjust the size based on the number of variables in the Bayesian network
     if len(bn.names()) > 4:
@@ -32,7 +33,7 @@ def get_inference_graph(bn, es):
     # Create a graph representation of the Bayesian network with evidence
     graph = BNinference2dot(bn, size=size, evs=evs_dict)
     # Render the `pydot` graph as a PNG image
-    png_str = graph.create_png(prog='dot.exe')
+    png_str = graph.create_png(prog='dot')
     # Treat the PNG output as an image file
     sio = io.BytesIO(png_str)
     sio.seek(0)
