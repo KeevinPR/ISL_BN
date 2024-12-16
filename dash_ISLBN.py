@@ -480,12 +480,15 @@ def display_inference_window(bn_model_data):
     evidence_selection = []
     for var in variables:
         var_labels = bn.variable(var).labels()
+        # Convert var_labels (a tuple) to a list for concatenation
+        var_labels_list = list(var_labels)
+        
         evidence_selection.append(
             html.Div([
                 html.Label(f'{var}:'),
                 dcc.Dropdown(
                     id={'type': 'evidence-dropdown', 'index': var},
-                    options=[{'label': label, 'value': label} for label in [''] + var_labels],
+                    options=[{'label': label, 'value': label} for label in [''] + var_labels_list],
                     value='',
                     clearable=True,
                     style={'width': '200px'}
