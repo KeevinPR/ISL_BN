@@ -9,13 +9,21 @@ import pyAgrum as gum
 
 import ast
 
+import rpy2.robjects as robjects
+from rpy2.robjects import r, pandas2ri, default_converter
 
+# Globally activate pandas2ri and set conversions once for NB
+pandas2ri.activate()
+
+uploaded_df = pd.DataFrame()
 # Import custom modules
 from NB import NB_k_fold_with_steps, cross_val_to_number
 from TAN import NB_TAN_k_fold_with_steps
 from inference import get_inference_graph
 from MarkovBlanketEDAs import UMDA
 
+robjects.r('.libPaths(c("/home/ubuntu/miniconda3/lib/R/library", .libPaths()))')
+print("R DASH Library Paths:", robjects.r('.libPaths()'))
 
 # Initialize the Dash app
 app = dash.Dash(
@@ -248,6 +256,7 @@ def handle_model_run_and_navigation(
         raise dash.exceptions.PreventUpdate
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
+    global uploaded_df
     # Initialize return values
     model_results_data_out = model_results_data
     current_step_out = current_step
@@ -271,11 +280,14 @@ def handle_model_run_and_navigation(
                 jump_steps = jump_steps or 0
                 selection_parameter = selection_parameter or 'Mutual Information'
                 no_steps = no_steps or []
-                figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
+                uploaded_df = df.copy()
+                print("Type of df before calling NB_k_fold_with_steps:", type(df))
+                figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, uploaded_df, class_variable)
             elif model == 'TAN':
                 jump_steps = jump_steps or 0
                 selection_parameter = selection_parameter or 'Mutual Information'
                 no_steps = no_steps or []
+                print("Type of df before calling NB_TAN_k_fold_with_steps:", type(df))
                 figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
             model_results_data_out = {
                 'figures_list': serialize_figures_list(figures_list),
