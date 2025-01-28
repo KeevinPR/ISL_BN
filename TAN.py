@@ -8,289 +8,310 @@ import pyAgrum as gum
 import pyAgrum.skbn as skbn
 from sklearn.model_selection import KFold
 import matplotlib
+
 matplotlib.use('SVG')
 
-from rpy2.robjects import pandas2ri, default_converter
-from rpy2.robjects.conversion import localconverter
-from contextlib import contextmanager
-
-robjects.r('.libPaths(c("/home/ubuntu/miniconda3/lib/R/library", .libPaths()))')
-pandas2ri.activate()
-
-@contextmanager
-def rpy2_context():
-    pandas2ri.activate()
-    robjects.conversion.set_conversion(default_converter + pandas2ri.converter)
-    with localconverter(default_converter + pandas2ri.converter):
-        yield
-
-utils = importr('utils')
-bnclassify = importr('bnclassify')
-
 def NB_TAN_k_fold_with_steps(jumpSteps, selection_parameter, dataset, class_var):
-    """
-    TAN classifier with k-fold cross-validation, step-wise arcs addition.
-    'dataset' must be a Pandas DataFrame, not a CSV path.
-    """
-    with rpy2_context():
-        try:
-            # -- Debug prints --
-            print("\n[NB_TAN_k_fold_with_steps] Before forcing columns:")
-            print("DataFrame columns:", dataset.columns.tolist())
-            print("DataFrame dtypes:\n", dataset.dtypes)
-            print("Head:\n", dataset.head(5), "\n")
 
-            # -- Reset index + force columns to str, then category
-            df_cars = dataset.reset_index(drop=True).copy(deep=True)
-            df_cars = df_cars.apply(lambda col: col.astype(str))
-            df_cars = df_cars.apply(lambda col: col.astype('category'))
+  """
+    Performs TAN classifier with k-fold cross-validation and visualization of the step-wise process.
 
-            print("[NB_TAN_k_fold_with_steps] After forcing to string->category:")
-            print("DataFrame dtypes:\n", df_cars.dtypes)
-            print("Head:\n", df_cars.head(5), "\n")
+    Args:
+        jumpSteps (int): Number of steps to jump before recalculating weights and scores.
+        selection_parameter (str): Parameter for feature selection. Valid options: "Score" or "MI" (Mutual Information).
+        dataset (str): Path to the dataset file.
+        class_variable (str): The class variable of the classification problem.
 
-            # Convert to R
-            r_from_pd_df = robjects.conversion.py2rpy(df_cars)
-            robjects.globalenv['r_from_pd_df'] = r_from_pd_df
-            robjects.r('r_from_pd_df <- as.data.frame(unclass(r_from_pd_df), stringsAsFactors = TRUE)')
+    Returns:
+        figures_list (list): List of tuples containing the figure, scores, and learned Bayesian network for each step.
+        
+  """
 
-            # Pass class_variable to R
-            robjects.globalenv['class_variable'] = class_var
+  importr('utils')
+  importr('bnclassify')
 
-            # Build the initial NB
-            tan = robjects.r("bnc('nb', class_variable, r_from_pd_df, smooth=0.01)")
-            robjects.globalenv["tan"] = tan
+  figures_list = []
 
-            modelo = robjects.r('modelstring(tan)')[0]
-            class_var = robjects.r('class_var(tan)')[0]
-            features = list(robjects.r('features(tan)'))
+  df_cars = pd.read_csv(dataset)
 
-            g = nx.DiGraph()
-            g.add_node(class_var)
-            g.add_nodes_from(features)
-            #familia = robjects.r('families(tan)')
+  from rpy2.robjects import pandas2ri
+  from rpy2.robjects.conversion import localconverter
+  with localconverter(robjects.default_converter + pandas2ri.converter):
+    r_from_pd_df = robjects.conversion.py2rpy(df_cars)
+  
+  robjects.globalenv['r_from_pd_df'] = r_from_pd_df
 
-            edges_class_var = []
-            rest_edges = []
-            familia_r = robjects.r('families(tan)')
-            # Convert 'familia_r' into a pure Python list of lists
-            familia_py = []
-            for item in familia_r:
-                # Each 'item' is an rpy2 object. Convert to a Python list of strings
-                item_list = list(item)  # or [str(x) for x in item] if needed
-                familia_py.append(item_list)
+  robjects.r('r_from_pd_df <- as.data.frame(unclass(r_from_pd_df), stringsAsFactors = TRUE)')
 
-            # Now iterate 'familia_py' normally
-            for x in familia_py:
-                for i in range(1, len(x)):
-                    g.add_edge(x[i], x[0])
-                    if x[i] == class_var:
-                        edges_class_var.append((x[i], x[0]))
-                    else:
-                        rest_edges.append((x[i], x[0]))
+  robjects.globalenv['class_variable'] = class_var
 
-            distance = 0
-            fixed_distance = 0.25
-            fixed_distance_y = 0.5
-            features_pos = {}
-            for f in features:
-                features_pos[f] = (distance, 0.25)
-                distance += fixed_distance
+  tan = robjects.r("bnc('nb',class_variable, r_from_pd_df, smooth= 0.01)")
 
-            df = df_cars.copy()
-            df2 = pd.DataFrame()
-            g.clear()
+  robjects.globalenv["tan"] = tan
 
-            def obtain_weight_features(features_list):
-                weight_list = []
-                for f in features_list:
-                    #order = f"cmi('{f}','{class_var}', r_from_pd_df)"
-                    #weight = float(robjects.r(order)[0])
-                    order = f"as.numeric(cmi('{f}','{class_var}', r_from_pd_df))"
-                    res = robjects.r(order)
-                    weight = float(res[0])
-                    
-                    weight_list.append(weight)
-                return weight_list
+  modelo = robjects.r('modelstring(tan)')[0]
+ 
+  class_var = robjects.r('class_var(tan)')[0]
 
-            weight_list = obtain_weight_features(features)
-            weight_list_aux = weight_list[:]
-            features_list_aux = features[:]
+  features = list(robjects.r('features(tan)'))
 
-            bn = gum.BayesNet()
-            df2[class_var] = df[class_var]
-            bn.add(class_var)
+  #Graph construction
 
-            steps_aux = jumpSteps
+  g = nx.DiGraph()
+  g.add_node(class_var)
+  g.add_nodes_from(features)
 
-            # If binary class
-            unique_vals = df[class_var].unique().tolist()
-            if len(unique_vals) == 2:
-                y = df[class_var].map({unique_vals[1]: True, unique_vals[0]: False})
-            else:
-                y = df[class_var]
+  familia = robjects.r('families(tan)')
 
-            figures_list = []
+  edges_class_var = []
 
-            # Step 1: Add arcs from class->features (Naive Bayes)
-            while weight_list_aux:
-                index_max = np.argmax(weight_list_aux)
-                feature = features_list_aux.pop(index_max)
-                weight_list_aux.pop(index_max)
-                
-                bn.add(feature)
-                df2[feature] = df[feature]
-                bn.addArc(class_var, feature)
-                g.add_edge(class_var, feature)
+  rest_edges = []
 
-                features_pos[feature] = (distance, 0.25)
-                distance += fixed_distance
+  for x in familia:
+    for i in range(1,len(x)):
+      g.add_edge(x[i],x[0])
+      if(x[i] == class_var):
+        edges_class_var.append((x[i],x[0]))
+      else:
+        rest_edges.append((x[i],x[0]))
 
-                if steps_aux == jumpSteps or not weight_list_aux:
-                    steps_aux = 0
-                    fig = plt.figure()
-                    nx.draw_networkx_nodes(g, pos=features_pos, nodelist=[feature],
-                                           node_size=1500, margins=0.2)
-                    nx.draw_networkx_nodes(
-                        g, pos={class_var: ((distance - fixed_distance)/2, fixed_distance_y)},
-                        nodelist=[class_var], node_color='#009900', node_size=1500
-                    )
-                    features_pos[class_var] = ((distance - fixed_distance)/2, fixed_distance_y)
+  distance = 0
+  fixed_distance = 0.25
+  fixed_distance_y = 0.5
+  features_pos = {}
 
-                    nx.draw_networkx_labels(g, pos=features_pos, font_weight='bold', font_size=5.5)
-                    nx.draw_networkx_edges(g, features_pos, arrows=True,
-                                           edgelist=[(class_var, feature)], node_size=1500)
+  for f in features:
+    features_pos[f] = (distance,0.25)
+    distance += fixed_distance
 
-                    kf = KFold(n_splits=4, shuffle=True)
-                    scores = []
-                    for train_idx, test_idx in kf.split(df2):
-                        df_train = df2.iloc[train_idx]
-                        learner = gum.BNLearner(df_train)
-                        learner.useSmoothingPrior()
-                        bn2 = learner.learnParameters(bn.dag())
+  df = pd.read_csv(dataset)
+  df2 = pd.DataFrame()
 
-                        bnc = skbn.BNClassifier()
-                        bnc.fromTrainedModel(bn2, targetAttribute=class_var)
-                        yTest = y.iloc[test_idx]
-                        scoreCSV1 = bnc.score(df.iloc[test_idx], y=yTest)
-                        scores.append(scoreCSV1)
+  a
 
-                    figures_list.append((fig, scores))
-                else:
-                    steps_aux += 1
+  g.clear()
 
-            # Step 2: Convert df2 again for tan_cl
-            with localconverter(default_converter + pandas2ri.converter):
-                r_from_pd_df2 = robjects.conversion.py2rpy(df2)
-            robjects.globalenv['r_from_pd_df'] = r_from_pd_df2
-            robjects.r('r_from_pd_df <- as.data.frame(unclass(r_from_pd_df), stringsAsFactors = TRUE)')
+  def obtain_weight_features(features_list):
+    weight_list = []
+    for f in features_list:
+      order = "cmi('"+f+"','"+class_var+"', r_from_pd_df)"
+      weight = float(robjects.r(order)[0])
+      weight_list.append(weight)
+    return weight_list
 
-            tan = robjects.r("bnc('tan_cl', class_variable, r_from_pd_df, smooth=1, dag_args=list(score='aic'))")
-            robjects.globalenv["tan"] = tan
-            class_var = robjects.r('class_var(tan)')[0]
-            features = list(robjects.r('features(tan)'))
+  weight_list = obtain_weight_features(features)
 
-            g = nx.DiGraph()
-            g.add_node(class_var)
-            g.add_nodes_from(features)
-            #familia = robjects.r('families(tan)')
+  weight_list_aux = weight_list
 
-            edges_class_var = []
-            rest_edges = []
-            familia_r = robjects.r('families(tan)')
-            # Convert 'familia_r' into a pure Python list of lists
-            familia_py = []
-            for item in familia_r:
-                # Each 'item' is an rpy2 object. Convert to a Python list of strings
-                item_list = list(item)  # or [str(x) for x in item] if needed
-                familia_py.append(item_list)
+  features_list_aux = features
 
-            # Now iterate 'familia_py' normally
-            for x in familia_py:
-                for i in range(1, len(x)):
-                    g.add_edge(x[i], x[0])
-                    if x[i] == class_var:
-                        edges_class_var.append((x[i], x[0]))
-                    else:
-                        rest_edges.append((x[i], x[0]))
+  bn = gum.BayesNet()
 
-            def obtain_weight_edges(edges_list):
-                weight_list = []
-                for e in edges_list:
-                    order = f"cmi('{e[0]}','{e[1]}', z = '{class_var}', r_from_pd_df)"
-                    weight = float(robjects.r(order)[0])
-                    weight_list.append(weight)
-                return weight_list
+  df2[class_var] = df[class_var]
+  bn.add(class_var)
+  g.add_node(class_var)
 
-            edges = [k for k in g.edges if k[0] != class_var]
-            edges_weights = obtain_weight_edges(edges)
-            edges_weights_aux = edges_weights[:]
+  nodes_added = []
 
-            g.clear_edges()
-            bn = gum.BayesNet()
-            for ccol in df2.columns:
-                bn.add(ccol)
-            for ccol in df2.columns:
-                if ccol != class_var:
-                    g.add_edge(class_var, ccol)
-                    bn.addArc(class_var, ccol)
+  distance = 0
+  fixed_distance = 0.25
+  fixed_distance_y = 0.5
+  features_pos = {}
 
-            steps_aux = jumpSteps
-            if len(df[class_var].unique()) == 2:
-                y = df[class_var].map({df[class_var].unique()[1]: True,
-                                       df[class_var].unique()[0]: False})
-            else:
-                y = df[class_var]
+  steps_aux = jumpSteps
+  i=0
 
-            edges_added = []
+  if len(df[class_var].unique()) == 2:
+    y = df[class_var].map({df[class_var].unique()[1]: True, df[class_var].unique()[0]: False})
+  else:
+    y = df[class_var]
+  
+  while weight_list_aux:
+      
+      index_max = np.argmax(weight_list_aux)
+      feature = features_list_aux.pop(index_max)
+      weight_list_aux.pop(index_max)
+      
+      bn.add(feature)
+      df2[feature] = df[feature]
+      bn.addArc(class_var,feature)
+      g.add_edge(class_var, feature)
+      nodes_added.append(feature)
 
-            # Step 3: add edges among features (TAN part)
-            while edges_weights_aux:
-                index_max = np.argmax(edges_weights_aux)
-                edge = edges.pop(index_max)
-                edges_weights_aux.pop(index_max)
-                bn.addArc(*edge)
-                g.add_edge(*edge)
-                edges_added.append(edge)
+      features_pos[feature] = (distance,0.25)
+      distance += fixed_distance
 
-                if steps_aux == jumpSteps or not edges_weights_aux:
-                    steps_aux = 0
+      i+=1
 
-                    fig = plt.figure()
-                    nx.draw_networkx_nodes(g, pos=features_pos, nodelist=features,
-                                           node_size=1500, margins=0.2)
-                    nx.draw_networkx_nodes(g,
-                                           pos={class_var: ((distance - fixed_distance)/2, fixed_distance_y)},
-                                           nodelist=[class_var],
-                                           node_color='#009900', node_size=1500)
-                    nx.draw_networkx_labels(g, pos=features_pos, font_weight='bold', font_size=5.5)
-                    nx.draw_networkx_edges(g, features_pos, arrows=True,
-                                           edgelist=edges_class_var, node_size=1500)
-                    nx.draw_networkx_edges(g, features_pos, arrows=True,
-                                           edgelist=edges_added,
-                                           connectionstyle='arc3,rad=0.4', node_size=1500)
+      if steps_aux == jumpSteps or not weight_list_aux:
+        steps_aux = 0
+        
 
-                    kf = KFold(n_splits=4, shuffle=True)
-                    scores = []
-                    for train_idx, test_idx in kf.split(df2):
-                        df_train = df2.iloc[train_idx]
-                        learner = gum.BNLearner(df_train)
-                        learner.useSmoothingPrior()
-                        bn2 = learner.learnParameters(bn.dag())
+        fig = plt.figure()
 
-                        bnc = skbn.BNClassifier()
-                        bnc.fromTrainedModel(bn2, targetAttribute=class_var)
-                        yTest = y.iloc[test_idx]
-                        scoreCSV1 = bnc.score(df.iloc[test_idx], y=yTest)
-                        scores.append(scoreCSV1)
+        nx.draw_networkx_nodes(g,pos=features_pos,nodelist = nodes_added, node_size = 1500, margins= 0.2)
 
-                    figures_list.append((fig, scores, bn2))
-                else:
-                    steps_aux += 1
+        nx.draw_networkx_nodes(g,pos={class_var: ((distance-fixed_distance)/2,fixed_distance_y)},
+                          nodelist=[class_var],node_color='#009900',node_size = 1500)
+        
+        features_pos[class_var] = ((distance-fixed_distance)/2,fixed_distance_y)
 
-            return figures_list
+        
+        nx.draw_networkx_labels(g, pos = features_pos, font_weight='bold', font_size = 5.5)
 
-        except Exception as e:
-            print(f"[NB_TAN_k_fold_with_steps] Error in R TAN: {e}")
-            traceback = robjects.r('geterrmessage()')
-            return None
+        nx.draw_networkx_edges(g,features_pos,arrows = True, edgelist=[(class_var,node) for node in nodes_added],node_size = 1500)
+
+        kf = KFold(n_splits= 4,shuffle=True)
+
+        scores = []
+        
+        for k in kf.split(df2):
+
+          df_train = df2.iloc[k[0]]
+          learner=gum.BNLearner(df_train)
+          learner.useSmoothingPrior()
+          bn2 = learner.learnParameters(bn.dag())
+
+          bnc=skbn.BNClassifier()
+          bnc.fromTrainedModel(bn2,targetAttribute=class_var)
+          yTest = y.iloc[k[1]]
+
+          scoreCSV1 = bnc.score(df.iloc[k[1]], y = yTest)
+          scores.append(scoreCSV1)
+
+        figures_list.append((fig, scores))
+        
+      else:
+        steps_aux+=1
+
+      
+
+
+  with localconverter(robjects.default_converter + pandas2ri.converter):
+    r_from_pd_df = robjects.conversion.py2rpy(df2)
+
+  robjects.globalenv['r_from_pd_df'] = r_from_pd_df
+
+  robjects.r('r_from_pd_df <- as.data.frame(unclass(r_from_pd_df), stringsAsFactors = TRUE)')
+
+  tan = robjects.r("bnc('tan_cl', class_variable , r_from_pd_df, smooth = 1, dag_args = list(score = 'aic'))")
+
+  robjects.globalenv["tan"] = tan
+
+  class_var = robjects.r('class_var(tan)')[0]
+
+  features = list(robjects.r('features(tan)'))
+
+  g = nx.DiGraph()
+  g.add_node(class_var)
+  g.add_nodes_from(features)
+
+  familia = robjects.r('families(tan)')
+
+  edges_class_var = []
+
+  rest_edges = []
+
+  for x in familia:
+    for i in range(1,len(x)):
+      g.add_edge(x[i],x[0])
+      if(x[i] == class_var):
+        edges_class_var.append((x[i],x[0]))
+      else:
+        rest_edges.append((x[i],x[0]))
+
+  def obtain_weight_edges(edges_list):
+    weight_list = []
+    for e in edges_list:
+      order = "cmi('"+e[0]+"','"+e[1]+"', z = '"+class_var+"', r_from_pd_df)"
+      weight = float(robjects.r(order)[0])
+      weight_list.append(weight)
+    return weight_list
+
+  edges = [k for k in g.edges if k[0]!=class_var]
+
+  edges_weights = obtain_weight_edges(edges)
+
+  index_max = np.argmax(edges_weights)
+
+  edges_weights_aux = edges_weights
+
+  #Añadir las aristas del Naive Bayes y crear la red bayesiana
+  g.clear_edges()
+
+  bn = gum.BayesNet()
+
+  for i in df2.columns:
+      #print(i)
+      bn.add(i)
+
+  for i in df2.columns:
+      if(i != class_var):
+          g.add_edge(class_var,i)
+          bn.addArc(class_var,i)
+
+  edges_added = []
+
+  steps_aux = jumpSteps
+
+  if len(df[class_var].unique()) == 2:
+    y = df[class_var].map({df[class_var].unique()[1]: True, df[class_var].unique()[0]: False})
+  else:
+    y = df[class_var]
+
+  while edges_weights_aux:
+      index_max = np.argmax(edges_weights_aux)
+      edge = edges.pop(index_max)
+      edges_weights_aux.pop(index_max)
+      bn.addArc(*edge)
+      g.add_edge(*edge)
+      edges_added.append(edge)
+      #Draw net
+
+      if steps_aux == jumpSteps or not edges_weights_aux:
+
+        steps_aux = 0
+
+        fig = plt.figure()
+
+        nx.draw_networkx_nodes(g,pos=features_pos,nodelist = features, node_size = 1500, margins= 0.2)
+
+        nx.draw_networkx_nodes(g,pos={class_var: ((distance-fixed_distance)/2,fixed_distance_y)},
+                          nodelist=[class_var],node_color='#009900',node_size = 1500)
+        
+        nx.draw_networkx_labels(g, pos = features_pos, font_weight='bold', font_size = 5.5)
+
+        nx.draw_networkx_edges(g,features_pos,arrows = True, edgelist=edges_class_var,node_size = 1500)
+
+        nx.draw_networkx_edges(g,features_pos,arrows = True, edgelist= edges_added, connectionstyle='arc3,rad=0.4',node_size = 1500)
+
+
+        #plt.show()
+
+        kf = KFold(n_splits= 4,shuffle=True)
+
+        scores = []
+        
+        for k in kf.split(df2):
+
+          df_train = df2.iloc[k[0]]
+
+          learner=gum.BNLearner(df_train) 
+          learner.useSmoothingPrior()
+          bn2 = learner.learnParameters(bn.dag())
+
+          bnc=skbn.BNClassifier()
+          bnc.fromTrainedModel(bn2,targetAttribute=class_var)
+          yTest = y.iloc[k[1]]
+
+          scoreCSV1 = bnc.score(df.iloc[k[1]], y =yTest)
+          #print("{0:.2f}% good predictions".format(100*scoreCSV1))
+          scores.append(scoreCSV1)
+
+        figures_list.append((fig, scores, bn2))
+        #bnc.showROC_PR('datos/cars_discrete.csv')
+      
+      else:
+        steps_aux+=1
+
+  return figures_list
