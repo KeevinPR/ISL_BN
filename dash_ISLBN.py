@@ -6,24 +6,18 @@ import io
 from operator import attrgetter
 import matplotlib.pyplot as plt
 import pyAgrum as gum
+import tempfile
 
 import ast
 
-import rpy2.robjects as robjects
-from rpy2.robjects import r, pandas2ri, default_converter
+# rpy2 is no longer used for bridging an entire DataFrame to R.
+# We only use it if we want to do small partial calls. But the main bridging is gone.
 
-# Globally activate pandas2ri and set conversions once for NB
-pandas2ri.activate()
-
-uploaded_df = pd.DataFrame()
-# Import custom modules
+# Import your original NB/TAN code that expects CSV paths:
 from NB import NB_k_fold_with_steps, cross_val_to_number
 from TAN import NB_TAN_k_fold_with_steps
 from inference import get_inference_graph
 from MarkovBlanketEDAs import UMDA
-
-robjects.r('.libPaths(c("/home/ubuntu/miniconda3/lib/R/library", .libPaths()))')
-print("R DASH Library Paths:", robjects.r('.libPaths()'))
 
 # Initialize the Dash app
 app = dash.Dash(
@@ -104,7 +98,7 @@ app.layout = html.Div([
     dcc.Store(id='inference-results'),
 ])
 
-# Callback for uploading data
+# 1 Callback for uploading data
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('uploaded-data-store', 'data'),
@@ -117,13 +111,17 @@ def update_output(contents, filename):
         decoded = base64.b64decode(content_string)
         try:
             df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-            return html.Div([html.H5(filename), html.P('File uploaded successfully.')]), df.to_json(date_format='iso', orient='split')
-        except Exception as e:
+            return (
+                html.Div([html.H5(filename), html.P('File uploaded successfully.')]),
+                df.to_json(date_format='iso', orient='split')
+            )
+        except Exception:
             return html.Div(['There was an error processing the file.']), None
     else:
         return '', None
 
-# Callback for updating model parameters
+
+# 2 Callback for updating model parameters
 @app.callback(
     Output('model-parameters', 'children'),
     Input('model-dropdown', 'value'),
@@ -131,8 +129,9 @@ def update_output(contents, filename):
 )
 def update_parameters(model, data_json):
     if data_json is None:
-        return html.Div('Please upload a dataset first.', style={'color': 'red', 'textAlign': 'center', 'margin-top':'5px'})
+        return html.Div('Please upload a dataset first.', style={'color': 'red', 'textAlign': 'center', 'marginTop':'5px'})
     df = pd.read_json(io.StringIO(data_json), orient='split')
+    
     if model in ['Naive Bayes', 'TAN']:
         return html.Div([
             html.H3("Model Parameters", style={'textAlign': 'center'}),
@@ -210,7 +209,7 @@ def update_parameters(model, data_json):
     else:
         return ''
 
-# Combined Callback to Handle Model Running and Navigation
+# 3 Combined Callback to Handle Model Running and Navigation
 @app.callback(
     Output('model-results-store', 'data'),
     Output('current-step-store', 'data'),
@@ -218,12 +217,7 @@ def update_parameters(model, data_json):
     Output('current-generation-store', 'data'),
     Output('bn-model-store', 'data'),
     Input('run-button', 'n_clicks'),
-    Input('prev-step-button', 'n_clicks'),
-    Input('next-step-button', 'n_clicks'),
-    Input('choose-model-button', 'n_clicks'),
-    Input('prev-generation-button', 'n_clicks'),
-    Input('next-generation-button', 'n_clicks'),
-    Input('choose-model-button-edas', 'n_clicks'),
+    # plus other prev/next/choose-model clicks...
     State('model-results-store', 'data'),
     State('current-step-store', 'data'),
     State('edas-results-store', 'data'),
@@ -242,8 +236,7 @@ def update_parameters(model, data_json):
     prevent_initial_call=True
 )
 def handle_model_run_and_navigation(
-    run_clicks, prev_step_clicks, next_step_clicks, choose_model_clicks,
-    prev_gen_clicks, next_gen_clicks, choose_model_edas_clicks,
+    run_clicks,
     model_results_data, current_step,
     edas_results_data, current_generation,
     bn_model_data,
@@ -256,52 +249,55 @@ def handle_model_run_and_navigation(
         raise dash.exceptions.PreventUpdate
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    global uploaded_df
-    # Initialize return values
+    # Default returns
     model_results_data_out = model_results_data
     current_step_out = current_step
     edas_results_data_out = edas_results_data
     current_generation_out = current_generation
-    bn_model_data_out = bn_model_data  # Corrected initialization
+    bn_model_data_out = bn_model_data
 
     print(f"Button pressed: {button_id}")
 
     if button_id == 'run-button':
         if data_json is None:
             print("No data uploaded.")
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return (dash.no_update,)*5
+
         df = pd.read_json(io.StringIO(data_json), orient='split')
+        
         if model in ['Naive Bayes', 'TAN']:
-            if class_variable is None:
+            if not class_variable:
                 print("Class variable not selected.")
-                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-            
-            # Force class_variable to be a string if it is a dict
-            print("DEBUG: class_variable before fix =>", type(class_variable), class_variable)
+                return (dash.no_update,)*5
+
+            # Convert to string if needed
             if isinstance(class_variable, dict):
                 class_variable = class_variable.get("value", None)
-            print("DEBUG: class_variable after fix =>", type(class_variable), class_variable)
-            
+
+            # Write DataFrame to a temporary CSV file
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as tmp_file:
+                df.to_csv(tmp_file.name, index=False)
+                csv_path = tmp_file.name
+
+            jump_steps = jump_steps or 0
+            selection_parameter = selection_parameter or 'Mutual Information'
+            no_steps = no_steps or []
+
             if model == 'Naive Bayes':
-                # Ensure parameters have default values if None
-                jump_steps = jump_steps or 0
-                selection_parameter = selection_parameter or 'Mutual Information'
-                no_steps = no_steps or []
-                uploaded_df = df.copy()
-                print("Type of df before calling NB_k_fold_with_steps:", type(df))
-                figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, uploaded_df, class_variable)
-            elif model == 'TAN':
-                jump_steps = jump_steps or 0
-                selection_parameter = selection_parameter or 'Mutual Information'
-                no_steps = no_steps or []
-                print("Type of df before calling NB_TAN_k_fold_with_steps:", type(df))
-                figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, df, class_variable)
+                print(f"Calling NB_k_fold_with_steps with CSV path: {csv_path}")
+                figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
+            else:
+                print(f"Calling NB_TAN_k_fold_with_steps with CSV path: {csv_path}")
+                figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
+
+            # Now store them
             model_results_data_out = {
                 'figures_list': serialize_figures_list(figures_list),
                 'no_steps': 'yes' in no_steps
             }
             current_step_out = 0
-            print("Naive Bayes/TAN model executed successfully.")
+            print(f"{model} model executed successfully with CSV path approach.")
+
         elif model == 'EDAs':
             if class_variable is None:
                 print("Class variable not selected.")
@@ -703,4 +699,4 @@ def deserialize_bayesnet(serialized_bn):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host='0.0.0.0', port=8053)
+    app.run_server(debug=False, threaded=False, host='0.0.0.0', port=8053)
