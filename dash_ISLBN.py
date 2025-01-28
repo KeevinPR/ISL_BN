@@ -275,6 +275,13 @@ def handle_model_run_and_navigation(
             if class_variable is None:
                 print("Class variable not selected.")
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            
+            # Force class_variable to be a string if it is a dict
+            print("DEBUG: class_variable before fix =>", type(class_variable), class_variable)
+            if isinstance(class_variable, dict):
+                class_variable = class_variable.get("value", None)
+            print("DEBUG: class_variable after fix =>", type(class_variable), class_variable)
+            
             if model == 'Naive Bayes':
                 # Ensure parameters have default values if None
                 jump_steps = jump_steps or 0
