@@ -87,8 +87,6 @@ def NB_TAN_k_fold_with_steps(jumpSteps, selection_parameter, dataset, class_var)
   df = pd.read_csv(dataset)
   df2 = pd.DataFrame()
 
-  a
-
   g.clear()
 
   def obtain_weight_features(features_list):
