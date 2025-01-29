@@ -37,7 +37,12 @@ app.layout = html.Div([
         multiple=False
     ),
     html.Div(id='output-data-upload', style={'textAlign': 'center'}),
-
+    dcc.Checklist(
+        id='use-default-dataset',
+        options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
+        value=[],  # By default unchecked
+        style={'textAlign': 'center', 'marginTop': '10px'}
+    ),
     html.Hr(),
 
     # 2) Model selection
@@ -97,10 +102,24 @@ app.layout = html.Div([
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('uploaded-data-store', 'data'),
+    # We listen to BOTH the file-contents AND the checklist:
     Input('upload-data', 'contents'),
+    Input('use-default-dataset', 'value'),
     State('upload-data', 'filename')
 )
-def update_output(contents, filename):
+def update_output(contents, use_default_value, filename):
+    # 1) If user checked "use default dataset"
+    if 'default' in use_default_value:
+        try:
+            df = pd.read_csv('/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/ISLBN/cars_example.data')  # <== Your default path in the project root
+            return (
+                html.Div([html.H5('cars_example.data'), html.P('Using default dataset...')]),
+                df.to_json(date_format='iso', orient='split')
+            )
+        except Exception as e:
+            return (html.Div([f'Error reading default dataset: {e}']), None)
+
+    # 2) Else if user provided an upload
     if contents is not None:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -113,6 +132,7 @@ def update_output(contents, filename):
         except Exception:
             return html.Div(['There was an error processing the file.']), None
     else:
+        # 3) No default chosen, no upload => no data
         return '', None
 
 # 2) Update model parameters depending on user choice
