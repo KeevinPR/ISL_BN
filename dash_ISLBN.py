@@ -392,16 +392,15 @@ def handle_model_run_and_navigation(
             raise dash.exceptions.PreventUpdate
 
         figures_list = model_results_data['figures_list']
-        bn_str = figures_list[current_step]['bn']
-        bn = gum.BayesNet()
+        bn_serialized = figures_list[current_step]['bn']  # This is the dictionary you stored
         try:
-            bn.loadBN(bn_str)
-            print("Bayesian network loaded from string.")
+            bn = deserialize_bayesnet(bn_serialized)      # Use your custom deserializer
+            print("Bayesian network loaded from serialized BN data.")
         except Exception as e:
             print(f"Error loading BN: {e}")
             raise
         bn_model_data_out = serialize_bayesnet(bn)
-        print("Bayesian network serialized successfully.")
+        print("Bayesian network re-serialized successfully.")
 
     # --- EDAs GENERATION NAVIGATION ---
     elif button_id in ['prev-generation-button', 'next-generation-button']:
