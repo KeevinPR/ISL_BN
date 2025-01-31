@@ -562,6 +562,7 @@ def display_edas_generations(edas_results_data, generation_index):
         html.Button('Previous', id='prev-generation-button', n_clicks=0),
         html.Button('Next', id='next-generation-button', n_clicks=0),
         html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0),
+        html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
     ], style={'textAlign': 'center'}))
     return html.Div(content)
 
@@ -606,6 +607,7 @@ def display_inference_window(bn_model_data):
         html.H3('Inference', style={'textAlign': 'center'}),
         html.Div(evidence_selection, style={'columnCount': 2}),
         html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0),
+        html.Button('Choose this model (EDAs)', id='choose-model-button-edas', style={'display': 'none'}),
     ])
 
 def fig_to_base64_image(fig):
