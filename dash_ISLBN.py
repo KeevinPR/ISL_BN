@@ -21,83 +21,88 @@ app = dash.Dash(
     suppress_callback_exceptions=True
 )
 
-app.layout = html.Div([
-    html.H1("Bayesian Models Application", style={'textAlign': 'center'}),
+app.layout = dcc.Loading(
+    id="global-spinner",
+    overlay_style={"visibility":"visible", "filter": "blur(1px)"},
+    type="circle",        # You can choose "circle", "dot", "default", etc.
+    fullscreen=False,      # This ensures it covers the entire page
+    children=html.Div([
+                html.H1("Bayesian Models Application", style={'textAlign': 'center'}),
 
-    # 1) Dataset upload
-    html.H3("1. Load Dataset", style={'textAlign': 'center'}),
-    dcc.Upload(
-        id='upload-data',
-        children=html.Div(['Drag and drop or ', html.A('select a CSV file')]),
-        style={
-            'width': '50%', 'height': '60px', 'lineHeight': '60px',
-            'borderWidth': '1px', 'borderStyle': 'dashed',
-            'borderRadius': '5px', 'textAlign': 'center', 'margin': '0 auto'
-        },
-        multiple=False
-    ),
-    html.Div(id='output-data-upload', style={'textAlign': 'center'}),
-    dcc.Checklist(
-        id='use-default-dataset',
-        options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
-        value=[],  # By default unchecked
-        style={'textAlign': 'center', 'marginTop': '10px'}
-    ),
-    html.Hr(),
+                # 1) Dataset upload
+                html.H3("1. Load Dataset", style={'textAlign': 'center'}),
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Div(['Drag and drop or ', html.A('select a CSV file')]),
+                    style={
+                        'width': '50%', 'height': '60px', 'lineHeight': '60px',
+                        'borderWidth': '1px', 'borderStyle': 'dashed',
+                        'borderRadius': '5px', 'textAlign': 'center', 'margin': '0 auto'
+                    },
+                    multiple=False
+                ),
+                html.Div(id='output-data-upload', style={'textAlign': 'center'}),
+                dcc.Checklist(
+                    id='use-default-dataset',
+                    options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
+                    value=[],  # By default unchecked
+                    style={'textAlign': 'center', 'marginTop': '10px'}
+                ),
+                html.Hr(),
 
-    # 2) Model selection
-    html.H3("2. Select Model", style={'textAlign': 'center'}),
-    dcc.Dropdown(
-        id='model-dropdown',
-        options=[
-            {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
-            {'label': 'TAN', 'value': 'TAN'},
-            {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
-        ],
-        placeholder='Select a model',
-        style={'width': '50%', 'margin': '0 auto'}
-    ),
-    html.Div(id='model-parameters'),
+                # 2) Model selection
+                html.H3("2. Select Model", style={'textAlign': 'center'}),
+                dcc.Dropdown(
+                    id='model-dropdown',
+                    options=[
+                        {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
+                        {'label': 'TAN', 'value': 'TAN'},
+                        {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
+                    ],
+                    placeholder='Select a model',
+                    style={'width': '50%', 'margin': '0 auto'}
+                ),
+                html.Div(id='model-parameters'),
 
-    # 3) Run model button
-    html.Button('Run Model', id='run-button', n_clicks=0, style={'display': 'block', 'margin': '10px auto'}),
+                # 3) Run model button
+                html.Button('Run Model', id='run-button', n_clicks=0, style={'display': 'block', 'margin': '10px auto'}),
 
-    # 4) Output display
-    html.Div(id='model-output'),
+                # 4) Output display
+                html.Div(id='model-output'),
 
-    # Hidden inputs to store parameters
-    html.Div([
-        dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
-        dcc.Checklist(id='no-steps', options=[{'label': 'Yes', 'value': 'yes'}], value=[], style={'display': 'none'}),
-        dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
-        dcc.Dropdown(id='class-variable', style={'display': 'none'}),
-        dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
-        dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
-        dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
-        dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
-    ]),
+                # Hidden inputs to store parameters
+                html.Div([
+                    dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
+                    dcc.Checklist(id='no-steps', options=[{'label': 'Yes', 'value': 'yes'}], value=[], style={'display': 'none'}),
+                    dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
+                    dcc.Dropdown(id='class-variable', style={'display': 'none'}),
+                    dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
+                    dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
+                    dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
+                    dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
+                ]),
 
-    # Hidden buttons
-    html.Div([
-        html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
-        html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
-        html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
-        html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
-        html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
-        html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
-        html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
-    ]),
+                # Hidden buttons
+                html.Div([
+                    html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
+                    html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
+                ]),
 
-    # Hidden dcc.Store to keep various states
-    dcc.Store(id='uploaded-data-store'),
-    dcc.Store(id='model-results-store'),
-    dcc.Store(id='current-step-store'),
-    dcc.Store(id='edas-results-store'),
-    dcc.Store(id='current-generation-store'),
-    dcc.Store(id='bn-model-store'),
-    dcc.Store(id='inference-results'),
-])
-
+                # Hidden dcc.Store to keep various states
+                dcc.Store(id='uploaded-data-store'),
+                dcc.Store(id='model-results-store'),
+                dcc.Store(id='current-step-store'),
+                dcc.Store(id='edas-results-store'),
+                dcc.Store(id='current-generation-store'),
+                dcc.Store(id='bn-model-store'),
+                dcc.Store(id='inference-results'),
+            ])
+)
 # 1) Callback for uploading data
 @app.callback(
     Output('output-data-upload', 'children'),
