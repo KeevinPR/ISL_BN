@@ -590,38 +590,56 @@ def display_inference_window(bn_model_data, inference_results=None):
     evidence_selection = []
 
     for var in variables:
-        var_labels_list = list(bn.variable(var).labels())
+        labels = bn.variable(var).labels()
         evidence_selection.append(
             html.Div([
                 html.Label(f'{var}:'),
                 dcc.Dropdown(
                     id={'type': 'evidence-dropdown', 'index': var},
-                    options=[{'label': label, 'value': label} for label in [''] + var_labels_list],
+                    options=[{'label': lb, 'value': lb} for lb in [''] + list(labels)],
                     value='',
                     clearable=True,
-                    style={'width': '200px'}
+                    style={'width': '150px'}
                 )
-            ], style={'marginBottom': '10px', 'display': 'inline-block', 'marginRight': '20px'})
+            ],
+            style={
+                'display': 'inline-block',
+                'verticalAlign': 'top',
+                'margin': '5px 15px'
+            })
         )
 
     # Put the inference results below the dropdowns
-    if inference_results is None:
-        results_section = html.Div()  # empty if no inference has been done yet
-    else:
-        # inference_results is the Div you return in perform_inference,
-        # so you can just place it right here
-        results_section = inference_results
+    # If inference_results is None, this will be an empty div
+    results_section = html.Div()
+    if inference_results is not None:
+        results_section = html.Div([
+            html.H4('Inference Results', style={'textAlign': 'center'}),
+            inference_results  # This is the html.Div with the image
+        ], style={'marginTop': '20px'})
 
     return html.Div([
         html.H3('Inference', style={'textAlign': 'center'}),
-        # Show all the evidence dropdowns
-        html.Div(evidence_selection, style={'columnCount': 2}),
 
-        # Button to compute
-        html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0),
+        # Contain all dropdowns in a flex container with centered content
+        # "display: flex" y "justifyContent: 'center'" 
+        html.Div(
+            children=evidence_selection,
+            style={
+                'display': 'flex',
+                'flexWrap': 'wrap',
+                'justifyContent': 'center'
+            }
+        ),
 
-        # The inference results (if any) appear here
-        html.Br(),
+        html.Div(
+            children=[
+                html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0)
+            ],
+            style={'textAlign': 'center', 'marginTop': '20px'}
+        ),
+        
+        # Section to display inference results
         results_section
     ])
 
