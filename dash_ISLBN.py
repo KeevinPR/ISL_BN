@@ -27,7 +27,7 @@ app.layout = dcc.Loading(
     type="circle", 
     fullscreen=False,      # This ensures it covers the entire page
     children=html.Div([
-                html.H1("Bayesian Models Application", style={'textAlign': 'center'}),
+                html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
 
                 # 1) Dataset upload
                 html.H3("1. Load Dataset", style={'textAlign': 'center'}),
