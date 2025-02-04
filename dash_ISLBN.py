@@ -491,29 +491,25 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
 def update_model_output(model_results_data, current_step,
                         edas_results_data, current_generation,
                         bn_model_data, inference_results):
-    # 1) If we have inference results, show them
-    if inference_results is not None:
-        return inference_results
-    
-    # 2) If we already chose a BN => show inference window
-    elif bn_model_data is not None:
-        return display_inference_window(bn_model_data)
-    
-    # 3) If we have EDAs results...
+
+    # 1) If we already chose a BN => show inference window
+    #    AND display inference results if we have any
+    if bn_model_data is not None:
+        return display_inference_window(bn_model_data, inference_results)
+
+    # 2) If we have EDAs results, show them...
     elif edas_results_data is not None:
-        # If current_generation is None => show best solution first
         if current_generation is None:
             return display_edas_best_solution(edas_results_data)
         else:
-            # Then if user clicked "Show generations", we show them
             return display_edas_generations(edas_results_data, current_generation)
-    
-    # 4) If we have NB/TAN results => show steps
+
+    # 3) If NB/TAN results => show steps
     elif model_results_data is not None and current_step is not None:
         figures_list = model_results_data['figures_list']
         return display_step(figures_list, current_step)
-    
-    # 5) Otherwise, nothing to display
+
+    # 4) Otherwise, nothing to display
     else:
         return html.Div('No model output to display.')
 
@@ -588,7 +584,7 @@ def display_step(figures_list, step_index):
         ], style={'textAlign': 'center'}),
     ])
 
-def display_inference_window(bn_model_data):
+def display_inference_window(bn_model_data, inference_results=None):
     bn = deserialize_bayesnet(bn_model_data)
     variables = bn.names()
     evidence_selection = []
@@ -608,11 +604,25 @@ def display_inference_window(bn_model_data):
             ], style={'marginBottom': '10px', 'display': 'inline-block', 'marginRight': '20px'})
         )
 
+    # Put the inference results below the dropdowns
+    if inference_results is None:
+        results_section = html.Div()  # empty if no inference has been done yet
+    else:
+        # inference_results is the Div you return in perform_inference,
+        # so you can just place it right here
+        results_section = inference_results
+
     return html.Div([
         html.H3('Inference', style={'textAlign': 'center'}),
+        # Show all the evidence dropdowns
         html.Div(evidence_selection, style={'columnCount': 2}),
+
+        # Button to compute
         html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0),
-        html.Button('Choose this model (EDAs)', id='choose-model-button-edas', style={'display': 'none'}),
+
+        # The inference results (if any) appear here
+        html.Br(),
+        results_section
     ])
 
 def fig_to_base64_image(fig):
