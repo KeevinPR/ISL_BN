@@ -625,9 +625,17 @@ def fig_to_base64_image(fig):
 
 def serialize_figures_list(figures_list):
     serialized_list = []
-    for fig, scores, bn2 in figures_list:
+    for step_tuple in figures_list:
+        # step_tuple can be (fig, scores) or (fig, scores, bn2)
+        if len(step_tuple) == 2:
+            fig, scores = step_tuple
+            bn2 = None
+        else:
+            fig, scores, bn2 = step_tuple
+
         img_data = fig_to_base64_image(fig)
-        bn_serialized = serialize_bayesnet(bn2)
+        bn_serialized = serialize_bayesnet(bn2) if bn2 else None
+
         serialized_list.append({
             'fig': img_data,
             'scores': scores,
