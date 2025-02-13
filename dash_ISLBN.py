@@ -474,7 +474,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
 
     return html.Div([
         html.H4('Inference Results', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img), style={'display': 'block', 'margin': '0 auto'}),
+        html.Img(src='data:image/png;base64,{}'.format(img), className="zoomable", style={'display': 'block', 'margin': '0 auto'}),
     ])
 
 # 5) Main output display logic
@@ -527,7 +527,7 @@ def display_edas_best_solution(edas_results_data):
 
     return html.Div([
         html.H3('Best Markov Blanket structure obtained by the algorithm:', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img_base64), style={'display': 'block', 'margin': '0 auto'}),
+        html.Img(src='data:image/png;base64,{}'.format(img_base64), className="zoomable", style={'display': 'block', 'margin': '0 auto'}),
         html.P(f"Score (fitness): {best_res.fitness:.4f}", style={'textAlign': 'center', 'fontWeight': 'bold'}),
 
         html.Div([
@@ -548,7 +548,7 @@ def display_edas_generations(edas_results_data, generation_index):
 
     content = [
         html.H3(f'Generation {generation_index + 1} of {total_generations}', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img), style={'display': 'block', 'margin': '0 auto'}),
+        html.Img(src='data:image/png;base64,{}'.format(img), className="zoomable", style={'display': 'block', 'margin': '0 auto'}),
     ]
 
     if generation_index > 0:
@@ -557,6 +557,7 @@ def display_edas_generations(edas_results_data, generation_index):
         diff_img = fig_to_base64_image(diff_figure)
         content.append(html.H4('Differences with the previous generation', style={'textAlign': 'center'}))
         content.append(html.Img(src='data:image/png;base64,{}'.format(diff_img),
+                                className="zoomable",
                                 style={'display': 'block', 'margin': '0 auto'}))
 
     content.append(html.Div([
@@ -575,7 +576,7 @@ def display_step(figures_list, step_index):
 
     return html.Div([
         html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img_data), style={'display': 'block', 'margin': '0 auto'}),
+        html.Img(src='data:image/png;base64,{}'.format(img_data), className="zoomable", style={'display': 'block', 'margin': '0 auto'}),
         html.P(f'Score: {score}', style={'textAlign': 'center'}),
         html.Div([
             html.Button('Previous', id='prev-step-button', n_clicks=0),
