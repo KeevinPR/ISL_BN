@@ -122,3 +122,22 @@ button:focus {
     background-color: #00A2E1;
     color: white;
 }
+
+
+
+#output-area {
+    overflow: visible !important;
+}
+.zoomable {
+    position: relative; 
+    z-index: 9999;      
+    transition: transform 0.2s;
+}
+  
+.zoomable:hover {
+    transform: scale(1.5);
+}
+hr {
+    position: relative;
+    z-index: 1;
+}
