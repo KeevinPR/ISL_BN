@@ -1,5 +1,5 @@
 **Fork Author:** Kevin Paniagua Romero  
-[<img src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png" alt="CIG UPM" width="50">](https://cig.fi.upm.es)
+[<img src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png" alt="CIG UPM" width="60">](https://cig.fi.upm.es)
 [<img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" alt="LinkedIn" width="65">](https://www.linkedin.com/in/kevinpr/)
 
 
