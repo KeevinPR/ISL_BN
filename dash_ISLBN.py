@@ -20,89 +20,97 @@ app = dash.Dash(
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
     suppress_callback_exceptions=True
 )
-
 app.layout = dcc.Loading(
     id="global-spinner",
-    overlay_style={"visibility":"visible", "filter": "blur(1px)"},
-    type="circle", 
-    fullscreen=False,      # This ensures it covers the entire page
+    overlay_style={"visibility": "visible", "filter": "blur(1px)"},
+    type="circle",
+    fullscreen=False,
     children=html.Div([
-                html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
+        html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
 
-                # 1) Dataset upload
-                html.H3("1. Load Dataset", style={'textAlign': 'center'}),
-                dcc.Upload(
-                    id='upload-data',
-                    children=html.Div(['Drag and drop or ', html.A('select a CSV file')]),
-                    style={
-                        'width': '50%', 'height': '60px', 'lineHeight': '60px',
-                        'borderWidth': '1px', 'borderStyle': 'dashed',
-                        'borderRadius': '5px', 'textAlign': 'center', 'margin': '0 auto'
-                    },
-                    multiple=False
-                ),
-                html.Div(id='output-data-upload', style={'textAlign': 'center'}),
-                dcc.Checklist(
-                    id='use-default-dataset',
-                    options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
-                    value=[],  # By default unchecked
-                    style={'textAlign': 'center', 'marginTop': '10px'}
-                ),
-                html.Hr(),
+        # 1) Dataset upload
+        html.H3("1. Load Dataset", style={'textAlign': 'center'}),
+        dcc.Upload(
+            id='upload-data',
+            children=html.Div(['Drag and drop or ', html.A('select a CSV file')]),
+            style={
+                'width': '50%', 'height': '60px', 'lineHeight': '60px',
+                'borderWidth': '1px', 'borderStyle': 'dashed',
+                'borderRadius': '5px', 'textAlign': 'center', 'margin': '0 auto'
+            },
+            multiple=False
+        ),
+        html.Div(id='output-data-upload', style={'textAlign': 'center'}),
+        dcc.Checklist(
+            id='use-default-dataset',
+            options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
+            value=[],  # By default unchecked
+            style={'textAlign': 'center', 'marginTop': '10px'}
+        ),
+        html.Hr(),
 
-                # 2) Model selection
-                html.H3("2. Select Model", style={'textAlign': 'center'}),
-                dcc.Dropdown(
-                    id='model-dropdown',
-                    options=[
-                        {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
-                        {'label': 'TAN', 'value': 'TAN'},
-                        {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
-                    ],
-                    placeholder='Select a model',
-                    style={'width': '50%', 'margin': '0 auto'}
-                ),
-                html.Div(id='model-parameters'),
+        # 2) Model selection
+        html.H3("2. Select Model", style={'textAlign': 'center'}),
+        dcc.Dropdown(
+            id='model-dropdown',
+            options=[
+                {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
+                {'label': 'TAN', 'value': 'TAN'},
+                {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
+            ],
+            placeholder='Select a model',
+            style={'width': '50%', 'margin': '0 auto'}
+        ),
+        html.Div(id='model-parameters'),
 
-                # 3) Run model button
-                html.Button('Run Model', id='run-button', n_clicks=0, style={'display': 'block', 'margin': '10px auto'}),
+        # 3) Run model button
+        html.Button('Run Model', id='run-button', n_clicks=0, style={'display': 'block', 'margin': '10px auto'}),
 
-                # 4) Output display
-                html.Div(id='model-output'),
+        # 4) Output display
+        html.Div(id='model-output'),
 
-                # Hidden inputs to store parameters
-                html.Div([
-                    dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
-                    dcc.Checklist(id='no-steps', options=[{'label': 'Yes', 'value': 'yes'}], value=[], style={'display': 'none'}),
-                    dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
-                    dcc.Dropdown(id='class-variable', style={'display': 'none'}),
-                    dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
-                    dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
-                    dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
-                    dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
-                ]),
+        # ------------------------------------------------------------------
+        # Hidden inputs for NB/TAN or EDAs parameters
+        # (All must exist if we reference them in callbacks)
+        # ------------------------------------------------------------------
+        html.Div([
+            dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
+            dcc.Checklist(id='no-steps', options=[{'label': 'Yes', 'value': 'yes'}], value=[], style={'display': 'none'}),
+            dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
+            dcc.Dropdown(id='class-variable', style={'display': 'none'}),
+            dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
+            dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
+            dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
+            dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
+        ]),
 
-                # Hidden buttons
-                html.Div([
-                    html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
-                    html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
-                ]),
+        # ------------------------------------------------------------------
+        # Hidden buttons for step/gen navigation or model choices
+        # ------------------------------------------------------------------
+        html.Div([
+            html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
+            html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
+            html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
 
-                # Hidden dcc.Store to keep various states
-                dcc.Store(id='uploaded-data-store'),
-                dcc.Store(id='model-results-store'),
-                dcc.Store(id='current-step-store'),
-                dcc.Store(id='edas-results-store'),
-                dcc.Store(id='current-generation-store'),
-                dcc.Store(id='bn-model-store'),
-                dcc.Store(id='inference-results'),
-            ])
+            html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
+            html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
+            html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
+            html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
+        ]),
+
+        # ------------------------------------------------------------------
+        # Stores to persist data across callbacks (BN, EDAs, steps, etc.)
+        # ------------------------------------------------------------------
+        dcc.Store(id='uploaded-data-store'),
+        dcc.Store(id='model-results-store'),
+        dcc.Store(id='current-step-store'),
+        dcc.Store(id='edas-results-store'),
+        dcc.Store(id='current-generation-store'),
+        dcc.Store(id='bn-model-store'),
+        dcc.Store(id='inference-results'),
+    ])
 )
+
 # 1) Callback for uploading data
 @app.callback(
     Output('output-data-upload', 'children'),
@@ -236,7 +244,7 @@ def update_parameters(model, data_json):
     Output('current-generation-store', 'data'),
     Output('bn-model-store', 'data'),
 
-    # 1) Relevant button IDs as multiple Inputs:
+    # Buttons as Inputs
     Input('run-button', 'n_clicks'),
     Input('prev-step-button', 'n_clicks'),
     Input('next-step-button', 'n_clicks'),
@@ -246,7 +254,7 @@ def update_parameters(model, data_json):
     Input('choose-model-button-edas', 'n_clicks'),
     Input('show-generations-button-edas', 'n_clicks'),
 
-    # 2) All States :
+    # States
     State('model-results-store', 'data'),
     State('current-step-store', 'data'),
     State('edas-results-store', 'data'),
@@ -264,9 +272,6 @@ def update_parameters(model, data_json):
     State('fitness-metric', 'value'),
     prevent_initial_call=True
 )
-
-# The function signature includes one argument per Input (in order),
-# and then the States afterwards.
 def handle_model_run_and_navigation(
     run_clicks,
     prev_step_clicks,
