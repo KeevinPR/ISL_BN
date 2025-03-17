@@ -38,25 +38,40 @@ app.layout = dcc.Loading(
         ########################################################
         # (A) Data upload
         ########################################################
-        html.H3("1. Load Dataset", style={'textAlign': 'center'}),
-        dcc.Upload(
-            id='upload-data',
-            children=html.Div(['Drag and drop or ', html.A('select a CSV file')]),
-            style={
-                'width': '50%', 'height': '60px', 'lineHeight': '60px',
-                'borderWidth': '1px', 'borderStyle': 'dashed',
-                'borderRadius': '5px', 'textAlign': 'center', 'margin': '0 auto'
-            },
-            multiple=False
-        ),
-        html.Div(id='output-data-upload', style={'textAlign': 'center'}),
-        dcc.Checklist(
-            id='use-default-dataset',
-            options=[{'label': 'Use default "cars_example.data"', 'value': 'default'}],
-            value=[],  # By default unchecked
-            style={'textAlign': 'center', 'marginTop': '10px'}
-        ),
-        html.Hr(),
+                # Title or subtitle for this section
+                html.H3("1. Upload Dataset", className="upload-title"),
+                
+                # Container "card"
+                html.Div([
+                    # Top part with icon and text
+                    html.Div([
+                        html.Img(
+                            src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  # Cloud icon (or whichever you prefer)
+                            className="upload-icon"
+                        ),
+                        html.Div("Drag and drop or select a CSV file", className="upload-text")
+                    ]),
+                    
+                    # Upload component
+                    dcc.Upload(
+                        id='upload-data',
+                        children=html.Div([], style={'display': 'none'}),
+                        className="upload-dropzone",
+                        multiple=False
+                    ),
+                ], className="upload-card"),
+                # Checkbox for using a default dataset
+                html.Div([
+                    dcc.Checklist(
+                        id='use-default-dataset',
+                        options=[{'label': 'Use the default dataset', 'value': 'default'}],
+                        value=[],
+                        style={'textAlign': 'center', 'marginTop': '10px'}
+                    )
+                ], style={'textAlign': 'center'}),
+                # Feedback message (uploaded file name or error)
+                html.Div(id='output-data-upload'),
+                html.Hr(),
 
         ########################################################
         # (B) Model selection
@@ -153,7 +168,8 @@ def update_output(contents, use_default_value, filename):
         try:
             df = pd.read_csv(default_path)
             return (
-                html.Div([html.H5('cars_example.data'), html.P('Using default dataset...')]),
+                html.Div([html.P('Using default dataset: cars_example.data',
+                                 style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0'})]),
                 df.to_json(date_format='iso', orient='split')
             )
         except Exception as e:
