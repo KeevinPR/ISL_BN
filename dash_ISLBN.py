@@ -24,6 +24,7 @@ app = dash.Dash(
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
     suppress_callback_exceptions=True
 )
+server = app.server
 
 # The main layout that includes everything
 app.layout = dcc.Loading(
@@ -193,7 +194,7 @@ def update_parameters(model, data_json):
             html.H3("Model Parameters", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Iterations between steps:'),
-                dcc.Input(id='jump-steps', type='number', value=0, min=0, step=1, style={'width': '60px'}),
+                dcc.Input(id='jump-steps-nb', type='number', value=0, min=0, step=1, style={'width': '60px'}),
             ], style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Skip all steps:'),
