@@ -36,7 +36,57 @@ app.layout = dcc.Loading(
     fullscreen=False,
     children=html.Div([
         html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
-
+        ########################################################
+        # Info text
+        ########################################################
+        html.Div(
+            className="link-bar",
+            style={
+                "textAlign": "center",
+                "marginBottom": "20px"
+            },
+            children=[
+                # Enlace para GitHub con logo a la izquierda
+                html.A(
+                    children=[
+                        html.Img(
+                            src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                            style={"height": "24px", "marginRight": "8px"}
+                        ),
+                        "Original GitHub"
+                    ],
+                    href="https://github.com/IvanTelloLopez/ISL_BN",
+                    target="_blank",
+                    className="btn btn-outline-info me-2"
+                ),
+                # Enlace para el PDF con logo a la izquierda
+                html.A(
+                    children=[
+                        html.Img(
+                            src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png",
+                            style={"height": "24px", "marginRight": "8px"}
+                        ),
+                        "Paper PDF"
+                    ],
+                    href="https://cig.fi.upm.es/wp-content/uploads/2024/01/Tello-I.-Interactive-Structure-Learning-for-Discrete-Bayesian-Network-Classifiers.pdf",
+                    target="_blank",
+                    className="btn btn-outline-primary me-2"
+                ),
+                # Enlace para el repositorio adaptado (sin logo, o puedes agregar uno similar si lo deseas)
+                html.A(
+                    children=[
+                        html.Img(
+                            src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                            style={"height": "24px", "marginRight": "8px"}
+                        ),
+                        "Dash Adapted GitHub"
+                    ],
+                    href="https://github.com/KeevinPR/ISL_BN",
+                    target="_blank",
+                    className="btn btn-outline-info me-2"
+                ),
+            ]
+        ),
         ########################################################
         # (A) Data upload
         ########################################################
@@ -49,7 +99,7 @@ app.layout = dcc.Loading(
                     # Top part with icon and text
                     html.Div([
                         html.Img(
-                            src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  # Cloud icon (or whichever you prefer)
+                            src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  
                             className="upload-icon"
                         ),
                         html.Div("Drag and drop or select a CSV file", className="upload-text")
