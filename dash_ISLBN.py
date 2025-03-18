@@ -38,8 +38,9 @@ app.layout = dcc.Loading(
         ########################################################
         # (A) Data upload
         ########################################################
+        html.Div(className="card", children=[
                 # Title or subtitle for this section
-                html.H3("1. Upload Dataset", className="upload-title"),
+                html.H3("1. Upload Dataset", className="section-title"),
                 
                 # Container "card"
                 html.Div([
@@ -71,24 +72,28 @@ app.layout = dcc.Loading(
                 ], style={'textAlign': 'center'}),
                 # Feedback message (uploaded file name or error)
                 html.Div(id='output-data-upload'),
+        ]),
                 html.Hr(),
 
         ########################################################
         # (B) Model selection
         ########################################################
-        html.H3("2. Select Model", style={'textAlign': 'center'}),
-        dcc.Dropdown(
-            id='model-dropdown',
-            options=[
-                {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
-                {'label': 'TAN', 'value': 'TAN'},
-                {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
-            ],
-            placeholder='Select a model',
-            style={'width': '50%', 'margin': '0 auto'}
-        ),
+        html.Div(className="card", children=[
+            html.H3("2. Select Model", className="section-title", style={'textAlign': 'center'}),
+        
+            dcc.Dropdown(
+                id='model-dropdown',
+                options=[
+                    {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
+                    {'label': 'TAN', 'value': 'TAN'},
+                    {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
+                ],
+                placeholder='Select a model',
+                style={'width': '50%', 'margin': '0 auto'}
+            ),
+        ]),
         html.Div(id='model-parameters'),
-
+        
         ########################################################
         # (C) Run model button and the main output area
         ########################################################
@@ -207,7 +212,7 @@ def update_parameters(model, data_json):
     
     if model in ['Naive Bayes', 'TAN']:
         return html.Div([
-            html.H3("Model Parameters", style={'textAlign': 'center'}),
+            html.H3("3. Model Parameters", className="section-title", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Iterations between steps:'),
                 dcc.Input(id='jump-steps-nb', type='number', value=0, min=0, step=1, style={'width': '60px'}),
@@ -808,4 +813,4 @@ def deserialize_bayesnet(serialized_bn):
 # 4) Run the server
 ########################################################################
 if __name__ == '__main__':
-    app.run_server(debug=False, threaded=False, host='0.0.0.0', port=8053)
+    app.run_server(debug=True, threaded=False, host='0.0.0.0', port=8053)
