@@ -85,6 +85,20 @@ app.layout = dcc.Loading(
             ]
         ),
         ########################################################
+        # Short explanatory text 
+        ########################################################
+        html.Div(
+            [
+                html.P(
+                    "Welcome to the Interactive Structured Learning tool. "
+                    "Below, you can upload your dataset, select a model, "
+                    "and explore the steps/generations of the Bayesian Network structure learning process.",
+                    style={"textAlign": "center", "maxWidth": "800px", "margin": "0 auto"}
+                )
+            ],
+            style={"marginBottom": "20px"}
+        ),
+        ########################################################
         # (A) Data upload
         ########################################################
         html.Div(className="card", children=[
