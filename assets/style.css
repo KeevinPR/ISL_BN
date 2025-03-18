@@ -198,7 +198,7 @@ hr {
   }
   
   /* Section title (e.g., "Upload Dataset") */
-  .upload-title {
+  .section-title {
     text-align: center;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-weight: 500;
@@ -213,3 +213,24 @@ hr {
     color: #555;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
+
+
+  /* Generic card container */
+.card {
+    background-color: #fff; 
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+    padding: 5px 0px 20px 0px;
+    margin: 20px auto;
+    max-width: 700px; /* adjust as needed */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  /* Subtle hover effect on the card */
+  .card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  
+  
+ 
