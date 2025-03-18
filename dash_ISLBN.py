@@ -1,5 +1,6 @@
 import dash
 from dash import dcc, html, Input, Output, State, callback_context
+import dash_bootstrap_components as dbc
 import pandas as pd
 import base64
 import io
@@ -21,6 +22,7 @@ from MarkovBlanketEDAs import UMDA
 
 app = dash.Dash(
     __name__,
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
     suppress_callback_exceptions=True
 )
@@ -824,4 +826,4 @@ def deserialize_bayesnet(serialized_bn):
 # 4) Run the server
 ########################################################################
 if __name__ == '__main__':
-    app.run_server(debug=False, threaded=False, host='0.0.0.0', port=8053)
+    app.run(debug=False, threaded=False, host='0.0.0.0', port=8053)
