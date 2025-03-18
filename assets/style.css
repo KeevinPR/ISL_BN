@@ -3,7 +3,6 @@
 /* Estilo para el cuerpo */
 body {
     font-family: 'Roboto', sans-serif;
-    background-color: #f8f9fa;
     color: #333;
     margin: 0;
     padding: 0;
@@ -217,7 +216,7 @@ hr {
 
   /* Generic card container */
 .card {
-    background-color: #fff; 
+    background-color: rgb(220, 241, 247, 0.1) !important;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.06);
     padding: 5px 0px 20px 0px;
