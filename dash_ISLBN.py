@@ -46,7 +46,6 @@ app.layout = dcc.Loading(
                 "marginBottom": "20px"
             },
             children=[
-                # Enlace para GitHub con logo a la izquierda
                 html.A(
                     children=[
                         html.Img(
@@ -59,7 +58,6 @@ app.layout = dcc.Loading(
                     target="_blank",
                     className="btn btn-outline-info me-2"
                 ),
-                # Enlace para el PDF con logo a la izquierda
                 html.A(
                     children=[
                         html.Img(
@@ -72,7 +70,6 @@ app.layout = dcc.Loading(
                     target="_blank",
                     className="btn btn-outline-primary me-2"
                 ),
-                # Enlace para el repositorio adaptado (sin logo, o puedes agregar uno similar si lo deseas)
                 html.A(
                     children=[
                         html.Img(
