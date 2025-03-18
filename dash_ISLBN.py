@@ -217,12 +217,42 @@ app.layout = html.Div([
     #  popover **outside** the dcc.Loading
     dbc.Popover(
         [
-            dbc.PopoverHeader("Need Help?"),
-            dbc.PopoverBody("Explanation about the default dataset usage."),
+            dbc.PopoverHeader(
+                [
+                    "Help",
+                    # Optional icon next to the text
+                    html.I(className="fa fa-info-circle ms-2", style={"color": "#0d6efd"})
+                ],
+                style={
+                    "backgroundColor": "#f8f9fa",  # Light gray background
+                    "fontWeight": "bold"
+                }
+            ),
+            dbc.PopoverBody(
+                [
+                    html.P(
+                        [
+                            "For details and content of the dataset, check out: ",
+                            html.A(
+                                "cars_example.data",
+                                href="https://github.com/KeevinPR/ISL_BN/blob/main/cars_example.data",
+                                target="_blank",
+                                style={"textDecoration": "underline", "color": "#0d6efd"}
+                            ),
+                        ]
+                    ),
+                    html.Hr(),  # Horizontal rule for a modern divider
+                    html.P("Feel free to upload your own dataset at any time.")
+                ],
+                style={
+                    "backgroundColor": "#ffffff",  # White background
+                    "borderRadius": "0 0 0.25rem 0.25rem"
+                }
+            ),
         ],
         id="help-popover-default-dataset",
         target="help-button-default-dataset",
-        placement="right",  # can be 'left', 'right', 'top', 'bottom', etc.
+        placement="right",  # could be 'left', 'bottom', etc.
         is_open=False,
         trigger="hover"  
     )
