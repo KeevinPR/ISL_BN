@@ -498,7 +498,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     img = fig_to_base64_image(figure)
 
     return html.Div([
-        html.H4('Inference Results', className="section-title", style={'textAlign': 'center'}),
+        html.H3('Inference Results', className="section-title", style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img), 
                  className="zoomable", 
                  style={'display': 'block', 'margin': '0 auto'}),
@@ -668,14 +668,15 @@ def display_inference_window(bn_model_data, inference_results=None):
             inference_results
         ], style={'marginTop': '20px'})
 
-    return html.Div(className="card", children=[
-        html.H3('Inference', className="section-title", style={'textAlign': 'center'}),
-        html.Div(children=evidence_selection,
-                 style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
-        html.Div(children=[
-            html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0)
-        ], style={'textAlign': 'center', 'marginTop': '20px'}),
-        results_section
+    return html.Div(children=[
+            html.Div(className="card", children=[
+            html.H3('Inference', className="section-title", style={'textAlign': 'center'}),
+            html.Div(children=evidence_selection,
+                    style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
+            html.Div(children=[
+                html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0)
+            ], style={'textAlign': 'center', 'marginTop': '20px'}),
+        ]),results_section,
     ])
 
 def fig_to_base64_image(fig):
