@@ -73,7 +73,7 @@ app.layout = dcc.Loading(
                 # Feedback message (uploaded file name or error)
                 html.Div(id='output-data-upload'),
         ]),
-                html.Hr(),
+        html.Hr(),
 
         ########################################################
         # (B) Model selection
@@ -89,7 +89,7 @@ app.layout = dcc.Loading(
                     {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
                 ],
                 placeholder='Select a model',
-                style={'width': '50%', 'margin': '0 auto'}
+                style={'width': '70%', 'margin': '0 auto'}
             ),
         ]),
         html.Div(id='model-parameters'),
@@ -211,7 +211,7 @@ def update_parameters(model, data_json):
     df = pd.read_json(io.StringIO(data_json), orient='split')
     
     if model in ['Naive Bayes', 'TAN']:
-        return html.Div([
+        return html.Div(className="card", children=[
             html.H3("3. Model Parameters", className="section-title", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Iterations between steps:'),
@@ -248,8 +248,8 @@ def update_parameters(model, data_json):
             ], style={'textAlign': 'center'}),
         ])
     elif model == 'EDAs':
-        return html.Div([
-            html.H3("EDAs Model Parameters", style={'textAlign': 'center'}),
+        return html.Div(className="card", children=[
+            html.H3("EDAs Model Parameters", className="section-title", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Number of generations:'),
                 dcc.Input(id='n-generations', type='number', value=1, min=1, step=1, 
@@ -498,7 +498,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     img = fig_to_base64_image(figure)
 
     return html.Div([
-        html.H4('Inference Results', style={'textAlign': 'center'}),
+        html.H4('Inference Results', className="section-title", style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img), 
                  className="zoomable", 
                  style={'display': 'block', 'margin': '0 auto'}),
@@ -556,8 +556,8 @@ def display_edas_best_solution(edas_results_data):
     fig = umda.from_chain_to_graph(best_res.chain)
     img_base64 = fig_to_base64_image(fig)
 
-    return html.Div([
-        html.H3('Best Markov Blanket structure obtained by the algorithm:',
+    return html.Div(className="card", children=[
+        html.H3('Best Markov Blanket structure obtained by the algorithm:', className="section-title", 
                 style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_base64), 
                  className="zoomable", 
@@ -584,22 +584,33 @@ def display_edas_generations(edas_results_data, generation_index):
     img = fig_to_base64_image(figure)
 
     content = [
-        html.H3(f'Generation {generation_index + 1} of {total_generations}', 
-                style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img), 
-                 className="zoomable", 
-                 style={'display': 'block', 'margin': '0 auto'}),
+        html.H3(
+            f'Generation {generation_index + 1} of {total_generations}',
+            className="section-title",
+            style={'textAlign': 'center'}
+        ),
+        html.Img(
+            src='data:image/png;base64,{}'.format(img),
+            className="zoomable",
+            style={'display': 'block', 'margin': '0 auto'}
+        ),
     ]
 
     if generation_index > 0:
-        diff_figure = umda.graph_between_chains(best_results[generation_index-1].chain,
-                                                best_results[generation_index].chain)
+        diff_figure = umda.graph_between_chains(
+            best_results[generation_index-1].chain,
+            best_results[generation_index].chain
+        )
         diff_img = fig_to_base64_image(diff_figure)
-        content.append(html.H4('Differences with the previous generation',
-                               style={'textAlign': 'center'}))
-        content.append(html.Img(src='data:image/png;base64,{}'.format(diff_img),
-                                className="zoomable",
-                                style={'display': 'block', 'margin': '0 auto'}))
+        content.append(html.H4(
+            'Differences with the previous generation',
+            style={'textAlign': 'center'}
+        ))
+        content.append(html.Img(
+            src='data:image/png;base64,{}'.format(diff_img),
+            className="zoomable",
+            style={'display': 'block', 'margin': '0 auto'}
+        ))
 
     content.append(html.Div([
         html.Button('Previous', id='prev-generation-button', n_clicks=0),
@@ -608,7 +619,8 @@ def display_edas_generations(edas_results_data, generation_index):
         html.Button('Show generations', id='show-generations-button-edas', n_clicks=0,
                     style={'display': 'none'}),
     ], style={'textAlign': 'center'}))
-    return html.Div(content)
+
+    return html.Div(content, className="card")
 
 def display_step(figures_list, step_index):
     data = figures_list[step_index]
@@ -616,8 +628,8 @@ def display_step(figures_list, step_index):
     score = cross_val_to_number(data['scores'])
     total_steps = len(figures_list)
 
-    return html.Div([
-        html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
+    return html.Div(className="card", children=[
+        html.H3(f'Step {step_index + 1} of {total_steps}', className="section-title", style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_data), 
                  className="zoomable", 
                  style={'display': 'block', 'margin': '0 auto'}),
@@ -637,7 +649,7 @@ def display_inference_window(bn_model_data, inference_results=None):
     for var in variables:
         labels = bn.variable(var).labels()
         evidence_selection.append(
-            html.Div([
+            html.Div(children=[
                 html.Label(f'{var}:'),
                 dcc.Dropdown(
                     id={'type': 'evidence-dropdown', 'index': var},
@@ -652,13 +664,12 @@ def display_inference_window(bn_model_data, inference_results=None):
 
     results_section = html.Div()
     if inference_results is not None:
-        results_section = html.Div([
-            html.H4('Inference Results', style={'textAlign': 'center'}),
+        results_section = html.Div(className="card", children=[
             inference_results
         ], style={'marginTop': '20px'})
 
-    return html.Div([
-        html.H3('Inference', style={'textAlign': 'center'}),
+    return html.Div(className="card", children=[
+        html.H3('Inference', className="section-title", style={'textAlign': 'center'}),
         html.Div(children=evidence_selection,
                  style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
         html.Div(children=[
@@ -813,4 +824,4 @@ def deserialize_bayesnet(serialized_bn):
 # 4) Run the server
 ########################################################################
 if __name__ == '__main__':
-    app.run_server(debug=True, threaded=False, host='0.0.0.0', port=8053)
+    app.run_server(debug=False, threaded=False, host='0.0.0.0', port=8053)
