@@ -221,7 +221,7 @@ h1 {
     background-color: rgb(220, 241, 247, 0.1) !important;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.06);
-    padding: 5px 0px 20px 0px;
+    padding: 10px 0px 20px 0px;
     margin: 20px auto;
     max-width: 700px; /* adjust as needed */
   }
