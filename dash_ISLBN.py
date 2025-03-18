@@ -73,7 +73,6 @@ app.layout = dcc.Loading(
                 # Feedback message (uploaded file name or error)
                 html.Div(id='output-data-upload'),
         ]),
-        html.Hr(),
 
         ########################################################
         # (B) Model selection
