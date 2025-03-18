@@ -29,186 +29,205 @@ app = dash.Dash(
 server = app.server
 
 # The main layout that includes everything
-app.layout = dcc.Loading(
-    id="global-spinner",
-    overlay_style={"visibility": "visible", "filter": "blur(1px)"},
-    type="circle",
-    fullscreen=False,
-    children=html.Div([
-        html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
-        ########################################################
-        # Info text
-        ########################################################
-        html.Div(
-            className="link-bar",
-            style={
-                "textAlign": "center",
-                "marginBottom": "20px"
-            },
-            children=[
-                html.A(
-                    children=[
-                        html.Img(
-                            src="https://cig.fi.upm.es/wp-content/uploads/github.png",
-                            style={"height": "24px", "marginRight": "8px"}
-                        ),
-                        "Original GitHub"
-                    ],
-                    href="https://github.com/IvanTelloLopez/ISL_BN",
-                    target="_blank",
-                    className="btn btn-outline-info me-2"
-                ),
-                html.A(
-                    children=[
-                        html.Img(
-                            src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png",
-                            style={"height": "24px", "marginRight": "8px"}
-                        ),
-                        "Paper PDF"
-                    ],
-                    href="https://cig.fi.upm.es/wp-content/uploads/2024/01/Tello-I.-Interactive-Structure-Learning-for-Discrete-Bayesian-Network-Classifiers.pdf",
-                    target="_blank",
-                    className="btn btn-outline-primary me-2"
-                ),
-                html.A(
-                    children=[
-                        html.Img(
-                            src="https://cig.fi.upm.es/wp-content/uploads/github.png",
-                            style={"height": "24px", "marginRight": "8px"}
-                        ),
-                        "Dash Adapted GitHub"
-                    ],
-                    href="https://github.com/KeevinPR/ISL_BN",
-                    target="_blank",
-                    className="btn btn-outline-info me-2"
-                ),
-            ]
-        ),
-        ########################################################
-        # Short explanatory text 
-        ########################################################
-        html.Div(
-            [
-                html.P(
-                    "Welcome to the Interactive Structured Learning tool. "
-                    "Below, you can upload your dataset, select a model, "
-                    "and explore the steps/generations of the Bayesian Network structure learning process.",
-                    style={"textAlign": "center", "maxWidth": "800px", "margin": "0 auto"}
-                )
-            ],
-            style={"marginBottom": "20px"}
-        ),
-        ########################################################
-        # (A) Data upload
-        ########################################################
-        html.Div(className="card", children=[
-                # Title or subtitle for this section
-                html.H3("1. Upload Dataset", className="section-title"),
-                
-                # Container "card"
-                html.Div([
-                    # Top part with icon and text
-                    html.Div([
-                        html.Img(
-                            src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  
-                            className="upload-icon"
-                        ),
-                        html.Div("Drag and drop or select a CSV file", className="upload-text")
-                    ]),
-                    
-                    # Upload component
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([], style={'display': 'none'}),
-                        className="upload-dropzone",
-                        multiple=False
+app.layout = html.Div([
+    dcc.Loading(
+        id="global-spinner",
+        overlay_style={"visibility": "visible", "filter": "blur(1px)"},
+        type="circle",
+        fullscreen=False,
+        children=html.Div([
+            html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
+            ########################################################
+            # Info text
+            ########################################################
+            html.Div(
+                className="link-bar",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "20px"
+                },
+                children=[
+                    html.A(
+                        children=[
+                            html.Img(
+                                src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                                style={"height": "24px", "marginRight": "8px"}
+                            ),
+                            "Original GitHub"
+                        ],
+                        href="https://github.com/IvanTelloLopez/ISL_BN",
+                        target="_blank",
+                        className="btn btn-outline-info me-2"
                     ),
-                ], className="upload-card"),
-                # Checkbox for using a default dataset
-                html.Div([
-                    dcc.Checklist(
-                        id='use-default-dataset',
-                        options=[{'label': 'Use the default dataset', 'value': 'default'}],
-                        value=[],
-                        style={'textAlign': 'center', 'marginTop': '10px'}
-                    )
-                ], style={'textAlign': 'center'}),
-                # Feedback message (uploaded file name or error)
-                html.Div(id='output-data-upload'),
-        ]),
-
-        ########################################################
-        # (B) Model selection
-        ########################################################
-        html.Div(className="card", children=[
-            html.H3("2. Select Model", className="section-title", style={'textAlign': 'center'}),
-        
-            dcc.Dropdown(
-                id='model-dropdown',
-                options=[
-                    {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
-                    {'label': 'TAN', 'value': 'TAN'},
-                    {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
-                ],
-                placeholder='Select a model',
-                style={'width': '70%', 'margin': '0 auto'}
+                    html.A(
+                        children=[
+                            html.Img(
+                                src="https://cig.fi.upm.es/wp-content/uploads/2023/11/cropped-logo_CIG.png",
+                                style={"height": "24px", "marginRight": "8px"}
+                            ),
+                            "Paper PDF"
+                        ],
+                        href="https://cig.fi.upm.es/wp-content/uploads/2024/01/Tello-I.-Interactive-Structure-Learning-for-Discrete-Bayesian-Network-Classifiers.pdf",
+                        target="_blank",
+                        className="btn btn-outline-primary me-2"
+                    ),
+                    html.A(
+                        children=[
+                            html.Img(
+                                src="https://cig.fi.upm.es/wp-content/uploads/github.png",
+                                style={"height": "24px", "marginRight": "8px"}
+                            ),
+                            "Dash Adapted GitHub"
+                        ],
+                        href="https://github.com/KeevinPR/ISL_BN",
+                        target="_blank",
+                        className="btn btn-outline-info me-2"
+                    ),
+                ]
             ),
-        ]),
-        html.Div(id='model-parameters'),
-        
-        ########################################################
-        # (C) Run model button and the main output area
-        ########################################################
-        html.Button('Run Model', id='run-button', n_clicks=0,
-                    style={'display': 'block', 'margin': '10px auto'}),
+            ########################################################
+            # Short explanatory text 
+            ########################################################
+            html.Div(
+                [
+                    html.P(
+                        "Welcome to the Interactive Structured Learning tool. "
+                        "Below, you can upload your dataset, select a model, "
+                        "and explore the steps/generations of the Bayesian Network structure learning process.",
+                        style={"textAlign": "center", "maxWidth": "800px", "margin": "0 auto"}
+                    )
+                ],
+                style={"marginBottom": "20px"}
+            ),
+            ########################################################
+            # (A) Data upload
+            ########################################################
+            html.Div(className="card", children=[
+                    # Title or subtitle for this section
+                    html.H3("1. Upload Dataset", className="section-title"),
+                    # Container "card"
+                    html.Div([
+                        # Top part with icon and text
+                        html.Div([
+                            html.Img(
+                                src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  
+                                className="upload-icon"
+                            ),
+                            html.Div("Drag and drop or select a CSV file", className="upload-text")
+                        ]),
+                        
+                        # Upload component
+                        dcc.Upload(
+                            id='upload-data',
+                            children=html.Div([], style={'display': 'none'}),
+                            className="upload-dropzone",
+                            multiple=False
+                        ),
+                    ], className="upload-card"),
+                    # Checkbox for using a default dataset
+                    html.Div([
+                        dcc.Checklist(
+                            id='use-default-dataset',
+                            options=[{'label': 'Use the default dataset', 'value': 'default'}],
+                            value=[],
+                            style={'display': 'inline-block','textAlign': 'center', 'marginTop': '10px'}
+                        ),
+                        dbc.Button(
+                            html.I(className="fa fa-question-circle"),
+                            id="help-button-default-dataset",
+                            color="link",
+                            style={"display": "inline-block", "marginLeft": "8px"}
+                        ),
+                    ], style={'display': 'inline-block','textAlign': 'center'}),
+                    # Feedback message (uploaded file name or error)
+                    html.Div(id='output-data-upload'),
+            ]),
 
-        html.Div(id='model-output'),
+            ########################################################
+            # (B) Model selection
+            ########################################################
+            html.Div(className="card", children=[
+                html.H3("2. Select Model", className="section-title", style={'textAlign': 'center'}),
+            
+                dcc.Dropdown(
+                    id='model-dropdown',
+                    options=[
+                        {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
+                        {'label': 'TAN', 'value': 'TAN'},
+                        {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
+                    ],
+                    placeholder='Select a model',
+                    style={'width': '70%', 'margin': '0 auto'}
+                ),
+            ]),
+            html.Div(id='model-parameters'),
+            
+            ########################################################
+            # (C) Run model button and the main output area
+            ########################################################
+            html.Button('Run Model', id='run-button', n_clicks=0,
+                        style={'display': 'block', 'margin': '10px auto'}),
 
-        ########################################################
-        # (D) Hidden inputs for parameters (NB/TAN or EDAs)
-        ########################################################
-        html.Div([
-            dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
-            dcc.Checklist(id='no-steps', 
-                          options=[{'label': 'Yes', 'value': 'yes'}], 
-                          value=[], 
-                          style={'display': 'none'}),
-            dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
-            dcc.Dropdown(id='class-variable', style={'display': 'none'}),
+            html.Div(id='model-output'),
 
-            dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
-            dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
-            dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
-            dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
-        ]),
+            ########################################################
+            # (D) Hidden inputs for parameters (NB/TAN or EDAs)
+            ########################################################
+            html.Div([
+                dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
+                dcc.Checklist(id='no-steps', 
+                            options=[{'label': 'Yes', 'value': 'yes'}], 
+                            value=[], 
+                            style={'display': 'none'}),
+                dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
+                dcc.Dropdown(id='class-variable', style={'display': 'none'}),
 
-        ########################################################
-        # (E) Hidden buttons for step/gen navigation or model choices
-        ########################################################
-        html.Div([
-            html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
-            html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
-            html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
+                dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
+                dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
+                dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
+                dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
+            ]),
 
-            html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
-            html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
-            html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
-            html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
-        ]),
+            ########################################################
+            # (E) Hidden buttons for step/gen navigation or model choices
+            ########################################################
+            html.Div([
+                html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
+                html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
+                html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
 
-        ########################################################
-        # (F) dcc.Store to keep data across callbacks
-        ########################################################
-        dcc.Store(id='uploaded-data-store'),
-        dcc.Store(id='model-results-store'),
-        dcc.Store(id='current-step-store'),
-        dcc.Store(id='edas-results-store'),
-        dcc.Store(id='current-generation-store'),
-        dcc.Store(id='bn-model-store'),
-        dcc.Store(id='inference-results'),
-    ])
-)
+                html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
+                html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
+                html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
+                html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
+            ]),
 
+            ########################################################
+            # (F) dcc.Store to keep data across callbacks
+            ########################################################
+            dcc.Store(id='uploaded-data-store'),
+            dcc.Store(id='model-results-store'),
+            dcc.Store(id='current-step-store'),
+            dcc.Store(id='edas-results-store'),
+            dcc.Store(id='current-generation-store'),
+            dcc.Store(id='bn-model-store'),
+            dcc.Store(id='inference-results'),
+        ])
+    ), #End of dcc.Loading
+    #  popover **outside** the dcc.Loading
+    dbc.Popover(
+        [
+            dbc.PopoverHeader("Need Help?"),
+            dbc.PopoverBody("Explanation about the default dataset usage."),
+        ],
+        id="help-popover-default-dataset",
+        target="help-button-default-dataset",
+        placement="right",  # can be 'left', 'right', 'top', 'bottom', etc.
+        is_open=False,
+        trigger="hover"  
+    )
+    #future popovers here
+])
 # Critical: Also set the validation_layout to the exact same layout
 # so Dash never complains about missing IDs.
 app.validation_layout = app.layout
@@ -217,6 +236,19 @@ app.validation_layout = app.layout
 ########################################################################
 # 2) Callbacks
 ########################################################################
+
+# ----------------------------------------------------------------------------
+# Callback to toggle the popover for the upload help button
+# ----------------------------------------------------------------------------
+@app.callback(
+    Output("help-popover-upload", "is_open"),
+    Input("help-button-upload", "n_clicks"),
+    State("help-popover-upload", "is_open")
+)
+def toggle_popover_upload(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 # ----------------------------------------------------------------------------
 # (A) Callback for uploading data
