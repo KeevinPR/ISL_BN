@@ -104,7 +104,7 @@ app.layout = html.Div([
             ########################################################
             html.Div(className="card", children=[
                     # Title or subtitle for this section
-                    html.H3("1. Upload Dataset", className="section-title"),
+                    html.H3("1. Upload Dataset"),
                     # Container "card"
                     html.Div([
                         # Top part with icon and text
@@ -147,7 +147,7 @@ app.layout = html.Div([
             # (B) Model selection
             ########################################################
             html.Div(className="card", children=[
-                html.H3("2. Select Model", className="section-title", style={'textAlign': 'center'}),
+                html.H3("2. Select Model", style={'textAlign': 'center'}),
             
                 dcc.Dropdown(
                     id='model-dropdown',
@@ -336,7 +336,7 @@ def update_parameters(model, data_json):
     
     if model in ['Naive Bayes', 'TAN']:
         return html.Div(className="card", children=[
-            html.H3("3. Model Parameters", className="section-title", style={'textAlign': 'center'}),
+            html.H3("3. Model Parameters", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Iterations between steps:'),
                 dcc.Input(id='jump-steps-nb', type='number', value=0, min=0, step=1, style={'width': '60px'}),
@@ -373,7 +373,7 @@ def update_parameters(model, data_json):
         ])
     elif model == 'EDAs':
         return html.Div(className="card", children=[
-            html.H3("EDAs Model Parameters", className="section-title", style={'textAlign': 'center'}),
+            html.H3("EDAs Model Parameters", style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Number of generations:'),
                 dcc.Input(id='n-generations', type='number', value=1, min=1, step=1, 
@@ -622,7 +622,7 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     img = fig_to_base64_image(figure)
 
     return html.Div([
-        html.H3('Inference Results', className="section-title", style={'textAlign': 'center'}),
+        html.H3('Inference Results', style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img), 
                  className="zoomable", 
                  style={'display': 'block', 'margin': '0 auto'}),
@@ -681,7 +681,7 @@ def display_edas_best_solution(edas_results_data):
     img_base64 = fig_to_base64_image(fig)
 
     return html.Div(className="card", children=[
-        html.H3('Best Markov Blanket structure obtained by the algorithm:', className="section-title", 
+        html.H3('Best Markov Blanket structure obtained by the algorithm:',
                 style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_base64), 
                  className="zoomable", 
@@ -710,7 +710,6 @@ def display_edas_generations(edas_results_data, generation_index):
     content = [
         html.H3(
             f'Generation {generation_index + 1} of {total_generations}',
-            className="section-title",
             style={'textAlign': 'center'}
         ),
         html.Img(
@@ -753,7 +752,7 @@ def display_step(figures_list, step_index):
     total_steps = len(figures_list)
 
     return html.Div(className="card", children=[
-        html.H3(f'Step {step_index + 1} of {total_steps}', className="section-title", style={'textAlign': 'center'}),
+        html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_data), 
                  className="zoomable", 
                  style={'display': 'block', 'margin': '0 auto'}),
@@ -794,7 +793,7 @@ def display_inference_window(bn_model_data, inference_results=None):
 
     return html.Div(children=[
             html.Div(className="card", children=[
-            html.H3('Inference', className="section-title", style={'textAlign': 'center'}),
+            html.H3('Inference', style={'textAlign': 'center'}),
             html.Div(children=evidence_selection,
                     style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
             html.Div(children=[
