@@ -128,6 +128,9 @@ button:focus {
     overflow: visible !important;
 }
 .zoomable {
+    width: 80%; 
+    height: 80%; 
+    object-fit: contain;
     position: relative;    
     /*z-index: 9999;*/   
     transition: transform 0.2s;
