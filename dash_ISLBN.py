@@ -680,7 +680,7 @@ def display_edas_best_solution(edas_results_data):
     fig = umda.from_chain_to_graph(best_res.chain)
     img_base64 = fig_to_base64_image(fig)
 
-    return html.Div(className="card", children=[
+    return html.Div(className="card-big", children=[
         html.H3('Best Markov Blanket structure obtained by the algorithm:',
                 style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_base64), 
@@ -743,7 +743,7 @@ def display_edas_generations(edas_results_data, generation_index):
                     style={'display': 'none'}),
     ], style={'textAlign': 'center'}))
 
-    return html.Div(content, className="card")
+    return html.Div(content, className="card-big")
 
 def display_step(figures_list, step_index):
     data = figures_list[step_index]
@@ -751,7 +751,7 @@ def display_step(figures_list, step_index):
     score = cross_val_to_number(data['scores'])
     total_steps = len(figures_list)
 
-    return html.Div(className="card", children=[
+    return html.Div(className="card-big", children=[
         html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
         html.Img(src='data:image/png;base64,{}'.format(img_data), 
                  className="zoomable", 
@@ -787,12 +787,12 @@ def display_inference_window(bn_model_data, inference_results=None):
 
     results_section = html.Div()
     if inference_results is not None:
-        results_section = html.Div(className="card", children=[
+        results_section = html.Div(className="card-big", children=[
             inference_results
         ], style={'marginTop': '20px'})
 
     return html.Div(children=[
-            html.Div(className="card", children=[
+            html.Div(className="card-big", children=[
             html.H3('Inference', style={'textAlign': 'center'}),
             html.Div(children=evidence_selection,
                     style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
