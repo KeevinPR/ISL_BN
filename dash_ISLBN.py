@@ -266,7 +266,109 @@ app.validation_layout = app.layout
 ########################################################################
 # 2) Callbacks
 ########################################################################
+import re
+import numpy as np
 
+def linear_dependent_features(df, threshold=1.0):
+    """
+    Very simple example:
+    Returns a list of columns that are 100% correlated with another one (Pearson=1 or -1).
+    Adjust this function to your own definition of linear dependence.
+    """
+    to_remove = set()
+    corr_matrix = df.corr(numeric_only=True).abs()  # correlations in absolute value
+
+    # To avoid redundant checks, iterate only the upper triangle
+    # and check if correlation >= threshold
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i+1, len(corr_matrix.columns)):
+            if corr_matrix.iloc[i, j] >= threshold:
+                colname_j = corr_matrix.columns[j]
+                # Mark the j-th column as redundant (or i, depending on your preference)
+                to_remove.add(colname_j)
+    
+    return list(to_remove)
+
+def parse_content(content, filename, missing_threshold=0.3, sample_size=None):
+    """
+    Reads base64 content, applies multiple transformations:
+      - Removes columns with > (missing_threshold * 100)% of NaNs
+      - Removes rows with NaNs in the remaining columns
+      - Drops constant columns
+      - Renames columns to remove problematic characters (e.g., hyphens -> '_')
+      - Converts object -> category, numbers -> float64
+      - Resets the index
+      - Removes linearly dependent features
+      - (Optional) Samples the dataset if it's too large
+    Returns a cleaned DataFrame or None if something fails.
+    """
+    if not content:
+        return None
+
+    try:
+        # Separate the base64 content string and decode
+        _, content_string = content.split(',')
+        decoded = base64.b64decode(content_string)
+
+        # Read as CSV/text file
+        if any(ext in filename for ext in ['.csv', '.data', '.dat']):
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8')),
+                sep=None,
+                engine='python',
+                na_values='?'
+            )
+        else:
+            # If you want to force reading only .csv, .data, etc.,
+            # and return None otherwise, you can do it here.
+            return None
+
+        # 1) Remove columns that have more than X% of NaNs
+        #    threshold=int(0.3*len(df)) => 30%: if a column has <70% non-null, drop it.
+        df = df.dropna(axis=1, thresh=int((1 - missing_threshold) * len(df)))
+
+        # 2) Remove rows with any NaNs in the remaining columns
+        df = df.dropna(axis=0)
+
+        # 3) Remove constant columns
+        index_constant = np.where(df.nunique() == 1)[0]
+        constant_columns = [df.columns[i] for i in index_constant]
+        df.drop(columns=constant_columns, inplace=True)
+
+        # 4) (Optional) Sampling if the dataset is too large
+        if sample_size is not None and len(df) > sample_size:
+            df = df.sample(n=sample_size, random_state=42)
+
+        # 5) Rename columns with problematic characters (e.g., hyphens) => underscores
+        #    You can adjust the regular expression to fit your needs:
+        df.columns = [
+            re.sub(r'[^a-zA-Z0-9]+', '_', str(col))  # anything non-alphanumeric => '_'
+            for col in df.columns
+        ]
+
+        # 6) Convert types: object -> category, number -> float64
+        cat_data = df.select_dtypes(include=['object']).astype('category')
+        for c in cat_data.columns:
+            df[c] = cat_data[c]
+
+        float_data = df.select_dtypes(include=['int', 'float', 'number']).astype('float64')
+        for c in float_data.columns:
+            df[c] = float_data[c]
+
+        # 7) Reset the index
+        df.reset_index(drop=True, inplace=True)
+
+        # 8) Remove linearly dependent features
+        #    (Adjust 'threshold' in linear_dependent_features according to your use case)
+        to_remove_features = linear_dependent_features(df, threshold=1.0)
+        if to_remove_features:
+            df.drop(columns=to_remove_features, inplace=True, errors='ignore')
+
+        return df
+
+    except Exception as e:
+        print(f"Error parsing file: {e}")
+        return None
 # ----------------------------------------------------------------------------
 # Callback to toggle the popover for the upload help button
 # ----------------------------------------------------------------------------
@@ -291,34 +393,70 @@ def toggle_popover_upload(n, is_open):
     State('upload-data', 'filename')
 )
 def update_output(contents, use_default_value, filename):
-    # Modify the path if needed
     default_path = '/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/ISLBN/cars_example.data'
+    
+    # ---------------
+    # A) If user checks "Use default dataset"
+    # ---------------
     if 'default' in use_default_value:
         try:
-            df = pd.read_csv(default_path)
+            # 1) Read the default file contents
+            with open(default_path, 'r', encoding='utf-8') as f:
+                raw_text = f.read()
+            
+            # 2) Convert it to base64 so we can use parse_content the same way
+            content_b64 = "data:text/plain;base64," + base64.b64encode(raw_text.encode()).decode()
+            
+            # 3) Call parse_content. Let's pass a missing_threshold=0.3, sample_size=None, but you can tweak
+            df = parse_content(content_b64, "cars_example.data", missing_threshold=0.3, sample_size=None)
+            
+            if df is None:
+                return (
+                    html.Div(["Error processing the default dataset with parse_content."]), 
+                    None
+                )
+            
+            # If everything is good, we notify the user + store the cleaned df
             return (
-                html.Div([html.P('Using default dataset: cars_example.data',
-                                 style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0'})]),
+                html.Div([
+                    html.P('Using default dataset: cars_example.data',
+                           style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0'})
+                ]),
                 df.to_json(date_format='iso', orient='split')
             )
         except Exception as e:
             return (html.Div([f'Error reading default dataset: {e}']), None)
 
-    # Else if user uploaded a file
-    if contents is not None:
-        content_type, content_string = contents.split(',')
-        decoded = base64.b64decode(content_string)
-        try:
-            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+    # ---------------
+    # B) If user has uploaded a file manually
+    # ---------------
+    if contents is not None and filename is not None:
+        df = parse_content(
+            contents,
+            filename,
+            missing_threshold=0.3,
+            sample_size=None  # or pick some limit if you want sampling
+        )
+        
+        if df is not None:
+            # Return success message + the cleaned df
             return (
-                html.Div([html.H5(filename), html.P('File uploaded successfully.')]),
+                html.Div([
+                    html.H5(filename),
+                    html.P('File uploaded and processed successfully.')
+                ]),
                 df.to_json(date_format='iso', orient='split')
             )
-        except Exception:
-            return (html.Div(['There was an error processing the file.']), None)
-    else:
-        return '', None
-
+        else:
+            return (
+                html.Div(['There was an error processing the file with parse_content.']),
+                None
+            )
+    
+    # ---------------
+    # C) Otherwise (no upload, no default)
+    # ---------------
+    return '', None
 
 # ----------------------------------------------------------------------------
 # (B) Update model parameters depending on user choice
