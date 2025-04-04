@@ -36,7 +36,7 @@ app.layout = html.Div([
         type="circle",
         fullscreen=False,
         children=html.Div([
-            html.H1("Interactive Structured Learning for Discrete BN", style={'textAlign': 'center'}),
+            html.H1("Interactive Structural Learning for Discrete BN", style={'textAlign': 'center'}),
             ########################################################
             # Info text
             ########################################################
@@ -91,7 +91,7 @@ app.layout = html.Div([
             html.Div(
                 [
                     html.P(
-                        "Welcome to the Interactive Structured Learning tool. "
+                        "Welcome to the Interactive Structural Learning tool. "
                         "Below, you can upload your dataset, select a model, "
                         "and explore the steps/generations of the Bayesian Network structure learning process.",
                         style={"textAlign": "center", "maxWidth": "800px", "margin": "0 auto"}
