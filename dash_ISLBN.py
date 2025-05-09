@@ -228,12 +228,11 @@ app.layout = html.Div([
         [
             dbc.PopoverHeader(
                 [
-                    "Help",
-                    # Optional icon next to the text
+                    "Default Dataset",
                     html.I(className="fa fa-info-circle ms-2", style={"color": "#0d6efd"})
                 ],
                 style={
-                    "backgroundColor": "#f8f9fa",  # Light gray background
+                    "backgroundColor": "#f8f9fa",
                     "fontWeight": "bold"
                 }
             ),
@@ -250,20 +249,22 @@ app.layout = html.Div([
                             ),
                         ]
                     ),
-                    html.Hr(),  # Horizontal rule for a modern divider
+                    html.Hr(),
                     html.P("Feel free to upload your own dataset at any time.")
                 ],
                 style={
-                    "backgroundColor": "#ffffff",  # White background
-                    "borderRadius": "0 0 0.25rem 0.25rem"
+                    "backgroundColor": "#ffffff",
+                    "borderRadius": "0 0 0.25rem 0.25rem",
+                    "maxWidth": "300px"
                 }
             ),
         ],
         id="help-popover-default-dataset",
         target="help-button-default-dataset",
-        placement="right",  # could be 'left', 'bottom', etc.
+        placement="right",
         is_open=False,
-        trigger="hover"
+        trigger="hover",
+        style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
     ),
     # New Popover for Dataset Upload Requirements
     dbc.Popover(
