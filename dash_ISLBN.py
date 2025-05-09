@@ -104,7 +104,16 @@ app.layout = html.Div([
             ########################################################
             html.Div(className="card", children=[
                     # Title or subtitle for this section
-                    html.H3("1. Upload Dataset"),
+                    html.Div([
+                        html.H3("1. Upload Dataset", style={"display": "inline-block", "marginRight": "10px", "textAlign": "center"}),
+                        # Add help button right after the title
+                        dbc.Button(
+                            html.I(className="fa fa-question-circle"),
+                            id="help-button-dataset-requirements",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], style={"textAlign": "center", "position": "relative"}),
                     # Container "card"
                     html.Div([
                         # Top part with icon and text
@@ -254,8 +263,57 @@ app.layout = html.Div([
         target="help-button-default-dataset",
         placement="right",  # could be 'left', 'bottom', etc.
         is_open=False,
-        trigger="hover"  
-    )
+        trigger="hover"
+    ),
+    # New Popover for Dataset Upload Requirements
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Dataset Requirements",
+                    html.I(className="fa fa-check-circle ms-2", style={"color": "#198754"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li(
+                            children=[
+                                html.Strong("Format: "),
+                                "CSV, .data, .dat, or plain text with headers. Auto-detects delimiter."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("Data: "),
+                                "Discrete/categorical variables preferred. Numerical values will be converted."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("Missing Values: "),
+                                "Use '?' symbol. Columns with >30% missing data are removed."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("Cleaning: "),
+                                "Constant columns and perfectly correlated features are automatically removed."
+                            ]
+                        ),
+                    ]),
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "300px"}
+            ),
+        ],
+        id="help-popover-dataset-requirements",
+        target="help-button-dataset-requirements",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+        style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
+    ),
     #future popovers here
 ])
 # Critical: Also set the validation_layout to the exact same layout
@@ -311,16 +369,27 @@ def parse_content(content, filename, missing_threshold=0.3, sample_size=None):
         decoded = base64.b64decode(content_string)
 
         # Read as CSV/text file
-        if any(ext in filename for ext in ['.csv', '.data', '.dat']):
+        filename_lower = filename.lower()
+        # Extract the actual filename from a potential path
+        base_filename = filename_lower.split('/')[-1]
+
+        is_csv = base_filename.endswith('.csv')
+        is_data = base_filename.endswith('.data')
+        is_dat = base_filename.endswith('.dat')
+        has_no_extension = '.' not in base_filename
+
+        if is_csv or is_data or is_dat or has_no_extension:
             df = pd.read_csv(
                 io.StringIO(decoded.decode('utf-8')),
-                sep=None,
+                sep=None, # Auto-detect separator
                 engine='python',
-                na_values='?'
+                na_values='?' # Common missing value indicator
             )
         else:
-            # If you want to force reading only .csv, .data, etc.,
-            # and return None otherwise, you can do it here.
+            # If the file has an extension and it's not one of the recognized ones
+            print(f"Unsupported file type: {filename}. Attempting to parse will likely fail or lead to an error message.")
+            # The function will return None, and the calling callback will display a generic error.
+            # For a more specific message here, this function would need to return an error string/object.
             return None
 
         # 1) Remove columns that have more than X% of NaNs
@@ -378,6 +447,17 @@ def parse_content(content, filename, missing_threshold=0.3, sample_size=None):
     State("help-popover-upload", "is_open")
 )
 def toggle_popover_upload(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+# Callback for dataset requirements popover
+@app.callback(
+    Output("help-popover-dataset-requirements", "is_open"),
+    Input("help-button-dataset-requirements", "n_clicks"),
+    State("help-popover-dataset-requirements", "is_open")
+)
+def toggle_dataset_requirements_popover(n, is_open):
     if n:
         return not is_open
     return is_open
@@ -701,7 +781,7 @@ def handle_model_run_and_navigation(
         bn = deserialize_bayesnet(bn_serialized)
         bn_model_data_out = serialize_bayesnet(bn)
 
-    # EDAs GENERATION NAV
+    # EDAS GENERATION NAV
     elif button_id in ['prev-generation-button', 'next-generation-button']:
         if not edas_results_data or current_generation is None:
             raise dash.exceptions.PreventUpdate
@@ -714,7 +794,7 @@ def handle_model_run_and_navigation(
     elif button_id == 'show-generations-button-edas':
         current_generation_out = 0
 
-    # EDAs CHOOSE MODEL
+    # EDAS CHOOSE MODEL
     elif button_id == 'choose-model-button-edas':
         if not edas_results_data:
             raise dash.exceptions.PreventUpdate
@@ -813,7 +893,7 @@ def display_edas_best_solution(edas_results_data):
     umda_data = edas_results_data['umda']
     umda = deserialize_umda(umda_data)
     best_results_data = edas_results_data['best_results']
-    best_results = [deserialize_solution(x) for x in best_results_data]
+    best_results = [deserialize_solution(sol_data) for sol_data in best_results_data]
     best_res = max(best_results, key=attrgetter('fitness'))
     fig = umda.from_chain_to_graph(best_res.chain)
     img_base64 = fig_to_base64_image(fig)
