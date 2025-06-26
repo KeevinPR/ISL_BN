@@ -22,14 +22,82 @@ from MarkovBlanketEDAs import UMDA
 
 app = dash.Dash(
     __name__,
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,
+        'https://bayes-interpret.com/Model/LearningFromData/ISLBNDash/assets/liquid-glass.css'  # Apple Liquid Glass CSS
+    ],
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
     suppress_callback_exceptions=True
 )
 server = app.server
 
+# Safari Compatibility CSS Fix for Liquid Glass Effects
+SAFARI_FIX_CSS = """
+<style>
+/* === SAFARI LIQUID GLASS COMPATIBILITY FIXES === */
+/* Fixes for Safari 18 backdrop-filter + background-color bug */
+
+/* Safari detection using CSS only */
+@media not all and (min-resolution:.001dpcm) {
+    @supports (-webkit-appearance:none) {
+        
+        /* Fix for main cards - separate background and blur */
+        .card {
+            background: transparent !important;
+        }
+        
+        .card::before {
+            background: rgba(255, 255, 255, 0.12) !important;
+            -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
+            backdrop-filter: blur(15px) saturate(180%) !important;
+        }
+        
+        /* Fix for buttons - use webkit prefix and avoid background conflicts */
+        .btn {
+            background: transparent !important;
+            -webkit-backdrop-filter: blur(15px) !important;
+            backdrop-filter: blur(15px) !important;
+        }
+        
+        .btn::before {
+            background: rgba(255, 255, 255, 0.12) !important;
+        }
+        
+        /* Fix for form controls */
+        .form-control {
+            background: rgba(255, 255, 255, 0.15) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+        
+        /* Fix for upload card */
+        .upload-card {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+    }
+}
+
+/* Fallback for very old Safari versions */
+@supports not (backdrop-filter: blur(1px)) {
+    .card {
+        background: rgba(255, 255, 255, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    .btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+    }
+}
+</style>
+"""
+
 # The main layout that includes everything
 app.layout = html.Div([
+    # Safari Compatibility Fix - inject CSS
+    html.Div([
+        dcc.Markdown(SAFARI_FIX_CSS, dangerously_allow_html=True)
+    ], style={'display': 'none'}),
+    
     dcc.Loading(
         id="global-spinner",
         overlay_style={"visibility": "visible", "filter": "blur(1px)"},
