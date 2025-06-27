@@ -424,93 +424,9 @@ h3 {
   border-color: rgba(0, 162, 225, 0.3) !important;
 }
 
-/* === BOTONES ESPECÍFICOS === */
-#run-button {
-  background: linear-gradient(135deg, rgba(0, 162, 225, 0.9), rgba(0, 162, 225, 0.7)) !important;
-  color: white !important;
-  border: 1px solid rgba(0, 162, 225, 0.3) !important;
-  padding: 12px 24px !important;
-  font-size: 16px !important;
-  border-radius: 14px !important;
-  cursor: pointer !important;
-  backdrop-filter: var(--glass-blur) !important;
-  -webkit-backdrop-filter: var(--glass-blur) !important;
-  
-  box-shadow: 
-    0 4px 16px rgba(0, 162, 225, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-    
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-  font-weight: 500 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-}
 
-#run-button:hover {
-  transform: translateY(-2px) scale(1.05) !important;
-  background: linear-gradient(135deg, rgba(0, 162, 225, 1), rgba(0, 162, 225, 0.8)) !important;
-  box-shadow: 
-    0 6px 20px rgba(0, 162, 225, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-}
 
-#run-button:focus {
-  outline: none !important;
-  box-shadow: 
-    0 0 0 3px rgba(0, 162, 225, 0.3),
-    0 4px 16px rgba(0, 162, 225, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-}
 
-/* === UPLOAD COMPONENT GLASS STYLE === */
-.upload-card {
-  position: relative;
-  background: var(--glass-secondary) !important;
-  border: 1px solid var(--glass-edge) !important;
-  border-radius: 16px !important;
-  width: 30% !important;
-  margin: 20px auto !important;
-  padding: 15px !important;
-  backdrop-filter: var(--glass-blur) !important;
-  -webkit-backdrop-filter: var(--glass-blur) !important;
-  
-  box-shadow: 
-    0 6px 24px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-    
-  text-align: center !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-}
-
-.upload-card:hover {
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 
-    0 8px 28px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(0, 162, 225, 0.3) !important;
-}
-
-.upload-dropzone {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 2px dashed rgba(0, 162, 225, 0.4) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  transition: all 0.3s ease !important;
-  height: 50px !important;
-  line-height: 50px !important;
-}
-
-.upload-dropzone:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(0, 162, 225, 0.6) !important;
-  transform: scale(1.02);
-}
-
-.upload-text {
-  color: rgba(0, 0, 0, 0.8) !important;
-  font-weight: 500 !important;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
-}
 
 /* === DROPDOWNS GLASS STYLE === */
 .Select-control {
@@ -583,46 +499,7 @@ h3 {
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
-/* === LINK BAR GLASS STYLE === */
-.link-bar {
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-radius: 16px !important;
-  padding: 15px !important;
-  margin: 0 auto 20px auto !important;
-  max-width: 800px !important;
-  
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-}
 
-.link-bar .btn {
-  background: var(--glass-secondary) !important;
-  border: 1px solid var(--glass-edge) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  color: rgba(0, 0, 0, 0.8) !important;
-  font-weight: 500 !important;
-  
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    
-  transition: all 0.3s ease !important;
-}
-
-.link-bar .btn:hover {
-  transform: translateY(-2px) !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(0, 162, 225, 0.3) !important;
-  color: rgba(0, 162, 225, 0.9) !important;
-  box-shadow: 
-    0 4px 16px rgba(0, 162, 225, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-}
 
 /* === LOADING SPINNER GLASS === */
 #global-spinner {
