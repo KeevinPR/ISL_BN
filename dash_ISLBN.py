@@ -24,6 +24,7 @@ app = dash.Dash(
     __name__,
     external_stylesheets=[
         dbc.themes.BOOTSTRAP,
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',  # FontAwesome
         'https://bayes-interpret.com/Model/LearningFromData/ISLBNDash/assets/liquid-glass.css'  # Apple Liquid Glass CSS
     ],
     requests_pathname_prefix='/Model/LearningFromData/ISLBNDash/',
@@ -105,15 +106,9 @@ app.layout = html.Div([
         fullscreen=False,
         children=html.Div([
             html.H1("Interactive Structural Learning for Discrete BN", style={'textAlign': 'center'}),
-            ########################################################
-            # Info text
-            ########################################################
             html.Div(
                 className="link-bar",
-                style={
-                    "textAlign": "center",
-                    "marginBottom": "20px"
-                },
+                style={"textAlign": "center", "marginBottom": "20px"},
                 children=[
                     html.A(
                         children=[
@@ -182,18 +177,14 @@ app.layout = html.Div([
                             style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
                         ),
                     ], style={"textAlign": "center", "position": "relative"}),
-                    # Container "card"
                     html.Div([
-                        # Top part with icon and text
                         html.Div([
                             html.Img(
-                                src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",  
+                                src="https://img.icons8.com/ios-glyphs/40/cloud--v1.png",
                                 className="upload-icon"
                             ),
                             html.Div("Drag and drop or select a CSV file", className="upload-text")
                         ]),
-                        
-                        # Upload component
                         dcc.Upload(
                             id='upload-data',
                             children=html.Div([], style={'display': 'none'}),
@@ -239,11 +230,33 @@ app.layout = html.Div([
             ]),
             html.Div(id='model-parameters'),
             
-            ########################################################
-            # (C) Run model button and the main output area
-            ########################################################
-            html.Button('Run Model', id='run-button', n_clicks=0,
-                        style={'display': 'block', 'margin': '10px auto'}),
+            # (C) "Run" button + progress messages
+            html.Div([
+                html.Div([
+                    dbc.Button(
+                        [
+                            html.I(className="fas fa-play-circle me-2"),
+                            "Run Model"
+                        ],
+                        id='run-button',
+                        n_clicks=0,
+                        color="info",
+                        className="btn-lg",
+                        style={
+                            'fontSize': '1.1rem',
+                            'padding': '0.75rem 2rem',
+                            'borderRadius': '8px',
+                            'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                            'transition': 'all 0.3s ease',
+                            'backgroundColor': '#00A2E1',
+                            'border': 'none',
+                            'margin': '1rem 0',
+                            'color': 'white',
+                            'fontWeight': '500'
+                        }
+                    )
+                ], style={'textAlign': 'center'}),
+            ], style={'textAlign': 'center'}),
 
             html.Div(id='model-output'),
 
