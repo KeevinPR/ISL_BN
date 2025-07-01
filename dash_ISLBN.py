@@ -755,17 +755,47 @@ def toggle_dataset_requirements_popover(n, is_open):
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('uploaded-data-store', 'data'),
+    Output('use-default-dataset', 'value', allow_duplicate=True),
     Input('upload-data', 'contents'),
     Input('use-default-dataset', 'value'),
-    State('upload-data', 'filename')
+    State('upload-data', 'filename'),
+    prevent_initial_call=True
 )
 def update_output(contents, use_default_value, filename):
     default_path = '/var/www/html/CIGModels/backend/cigmodelsdjango/cigmodelsdjangoapp/ISLBN/cars_example.data'
     
     # ---------------
-    # A) If user checks "Use default dataset"
+    # A) If user has uploaded a file manually (PRIORITY OVER DEFAULT)
     # ---------------
-    if 'default' in use_default_value:
+    if contents is not None and filename is not None:
+        df = parse_content(
+            contents,
+            filename,
+            missing_threshold=0.3,
+            sample_size=None  # or pick some limit if you want sampling
+        )
+        
+        if df is not None:
+            # Return success message + the cleaned df + CLEAR default checkbox
+            return (
+                html.Div([
+                    html.H5(filename),
+                    html.P('File uploaded and processed successfully.')
+                ]),
+                df.to_json(date_format='iso', orient='split'),
+                []  # Clear the default dataset checkbox
+            )
+        else:
+            return (
+                html.Div(['There was an error processing the file with parse_content.']),
+                None,
+                []  # Clear the default dataset checkbox even on error
+            )
+    
+    # ---------------
+    # B) If user checks "Use default dataset" (and no file uploaded)
+    # ---------------
+    elif 'default' in use_default_value:
         try:
             # 1) Read the default file contents
             with open(default_path, 'r', encoding='utf-8') as f:
@@ -780,7 +810,8 @@ def update_output(contents, use_default_value, filename):
             if df is None:
                 return (
                     html.Div(["Error processing the default dataset with parse_content."]), 
-                    None
+                    None,
+                    use_default_value  # Keep current checkbox state
                 )
             
             # If everything is good, we notify the user + store the cleaned df
@@ -789,41 +820,20 @@ def update_output(contents, use_default_value, filename):
                     html.P('Using default dataset: cars_example.data',
                            style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0'})
                 ]),
-                df.to_json(date_format='iso', orient='split')
+                df.to_json(date_format='iso', orient='split'),
+                use_default_value  # Keep default checkbox checked
             )
         except Exception as e:
-            return (html.Div([f'Error reading default dataset: {e}']), None)
+            return (
+                html.Div([f'Error reading default dataset: {e}']), 
+                None,
+                use_default_value  # Keep current checkbox state
+            )
 
-    # ---------------
-    # B) If user has uploaded a file manually
-    # ---------------
-    if contents is not None and filename is not None:
-        df = parse_content(
-            contents,
-            filename,
-            missing_threshold=0.3,
-            sample_size=None  # or pick some limit if you want sampling
-        )
-        
-        if df is not None:
-            # Return success message + the cleaned df
-            return (
-                html.Div([
-                    html.H5(filename),
-                    html.P('File uploaded and processed successfully.')
-                ]),
-                df.to_json(date_format='iso', orient='split')
-            )
-        else:
-            return (
-                html.Div(['There was an error processing the file with parse_content.']),
-                None
-            )
-    
     # ---------------
     # C) Otherwise (no upload, no default)
     # ---------------
-    return '', None
+    return '', None, use_default_value  # Keep current checkbox state
 
 # ----------------------------------------------------------------------------
 # (B) Update model parameters depending on user choice
