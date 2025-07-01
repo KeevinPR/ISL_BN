@@ -490,7 +490,8 @@ app.layout = html.Div([
                 html.Div(id='evidence-controls', 
                         style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
                 html.Div([
-                    dbc.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0, color="primary")
+                    dbc.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0, color="primary", className="me-2"),
+                    dbc.Button('Back to Results', id='back-to-results-button', n_clicks=0, color="secondary")
                 ], style={'textAlign': 'center', 'marginTop': '20px'}),
                 html.Div(id='inference-results-display')
             ], style={'display': 'none', 'marginTop': '20px'}),
@@ -891,6 +892,7 @@ def reset_application(n_clicks):
     Input('next-generation-button', 'n_clicks'),
     Input('choose-model-button-edas', 'n_clicks'),
     Input('show-generations-button-edas', 'n_clicks'),
+    Input('back-to-results-button', 'n_clicks'),
 
     State('model-results-store', 'data'),
     State('current-step-store', 'data'),
@@ -919,6 +921,7 @@ def handle_model_run_and_navigation(
     next_gen_clicks,
     choose_model_edas_clicks,
     show_generations_edas_clicks,
+    back_to_results_clicks,
     model_results_data, current_step,
     edas_results_data, current_generation,
     bn_model_data,
@@ -947,6 +950,9 @@ def handle_model_run_and_navigation(
             return (dash.no_update,)*5
 
         df = pd.read_json(io.StringIO(data_json), orient='split')
+        
+        # CLEAR PREVIOUS INFERENCE STATE when running new model
+        bn_model_data_out = None
         
         # NB or TAN
         if model in ['Naive Bayes', 'TAN']:
@@ -979,6 +985,10 @@ def handle_model_run_and_navigation(
                 current_step_out = len(figures_list) - 1
             else:
                 current_step_out = 0
+            
+            # Clear EDAs results when running NB/TAN
+            edas_results_data_out = None
+            current_generation_out = None
 
         # EDAs
         elif model == 'EDAs':
@@ -1004,6 +1014,10 @@ def handle_model_run_and_navigation(
                 'generation_information': serialize_generation_information(generation_information)
             }
             current_generation_out = None  # show best solution first
+            
+            # Clear NB/TAN results when running EDAs
+            model_results_data_out = None
+            current_step_out = None
 
     # NB/TAN STEP NAV
     elif button_id in ['prev-step-button', 'next-step-button']:
@@ -1023,6 +1037,9 @@ def handle_model_run_and_navigation(
         bn_serialized = figures_list[current_step]['bn']
         bn = deserialize_bayesnet(bn_serialized)
         bn_model_data_out = serialize_bayesnet(bn)
+        # Clear model results to show inference interface
+        model_results_data_out = None
+        current_step_out = None
 
     # EDAS GENERATION NAV
     elif button_id in ['prev-generation-button', 'next-generation-button']:
@@ -1037,6 +1054,10 @@ def handle_model_run_and_navigation(
     elif button_id == 'show-generations-button-edas':
         current_generation_out = 0
 
+    # BACK TO RESULTS (clear inference state)
+    elif button_id == 'back-to-results-button':
+        bn_model_data_out = None
+
     # EDAS CHOOSE MODEL
     elif button_id == 'choose-model-button-edas':
         if not edas_results_data:
@@ -1046,6 +1067,9 @@ def handle_model_run_and_navigation(
         best_res = max(best_results, key=attrgetter('fitness'))
         bn = best_res.bn
         bn_model_data_out = serialize_bayesnet(bn)
+        # Clear EDAs results to show inference interface
+        edas_results_data_out = None
+        current_generation_out = None
 
     return (
         model_results_data_out,
@@ -1116,8 +1140,25 @@ def update_model_output_and_controls(model_results_data, current_step,
     inference_style = {'display': 'none', 'marginTop': '20px'}
     evidence_controls = []
 
-    # 1) If BN chosen => show inference
-    if bn_model_data is not None:
+    # PRIORITY LOGIC: Show most recent activity first
+    
+    # 1) If NB/TAN results are active (most recent activity) => show steps
+    if model_results_data is not None and current_step is not None:
+        figures_list = model_results_data['figures_list']
+        output_content = display_step_content(figures_list, current_step)
+        step_nav_style = {'display': 'block', 'marginTop': '20px'}
+
+    # 2) If EDAs results are active (most recent activity) => show best or generations
+    elif edas_results_data is not None:
+        if current_generation is None:
+            output_content = display_edas_best_solution_content(edas_results_data)
+            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
+        else:
+            output_content = display_edas_generations_content(edas_results_data, current_generation)
+            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
+
+    # 3) If BN chosen (user explicitly chose a model for inference) => show inference
+    elif bn_model_data is not None:
         bn = deserialize_bayesnet(bn_model_data)
         variables = bn.names()
         evidence_controls = []
@@ -1148,22 +1189,11 @@ def update_model_output_and_controls(model_results_data, current_step,
             )
 
         inference_style = {'display': 'block', 'marginTop': '20px'}
-        output_content = html.Div('Select evidence values and click "Calculate Inference" to see results.')
-
-    # 2) If EDAs => show best or generations
-    elif edas_results_data is not None:
-        if current_generation is None:
-            output_content = display_edas_best_solution_content(edas_results_data)
-            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
-        else:
-            output_content = display_edas_generations_content(edas_results_data, current_generation)
-            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
-
-    # 3) If NB/TAN => show steps
-    elif model_results_data is not None and current_step is not None:
-        figures_list = model_results_data['figures_list']
-        output_content = display_step_content(figures_list, current_step)
-        step_nav_style = {'display': 'block', 'marginTop': '20px'}
+        output_content = html.Div([
+            html.H4('Model Selected for Inference', style={'textAlign': 'center', 'color': 'green'}),
+            html.P('Select evidence values below and click "Calculate Inference" to see results.', 
+                   style={'textAlign': 'center'})
+        ])
 
     # 4) Otherwise
     else:
