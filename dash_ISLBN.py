@@ -206,6 +206,27 @@ app.layout = html.Div([
                 ],
                 style={"marginBottom": "20px"}
             ),
+            
+            # Reset button (always visible)
+            html.Div([
+                dbc.Button(
+                    [
+                        html.I(className="fas fa-redo me-2"),
+                        "Reset Application"
+                    ],
+                    id='reset-app-button',
+                    n_clicks=0,
+                    color="secondary",
+                    className="btn-sm",
+                    style={
+                        'fontSize': '0.9rem',
+                        'padding': '0.5rem 1rem',
+                        'borderRadius': '6px',
+                        'marginBottom': '20px'
+                    }
+                )
+            ], style={'textAlign': 'center'}),
+            
             ########################################################
             # (A) Data upload
             ########################################################
@@ -283,7 +304,132 @@ app.layout = html.Div([
                     }
                 ),
             ]),
-            html.Div(id='model-parameters'),
+            
+            ########################################################
+            # (C) Model parameters - ALL POSSIBLE PARAMETERS ALWAYS PRESENT
+            ########################################################
+            # NB/TAN Parameters
+            html.Div(id='nb-tan-parameters', className="card", children=[
+                html.H3("3. Model Parameters", style={'textAlign': 'center'}),
+                html.Div([
+                    html.Label('Iterations between steps:'),
+                    dcc.Input(id='jump-steps', type='number', value=0, min=0, step=1, style={'width': '60px'}),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Skip all steps:'),
+                    dcc.Checklist(
+                        id='no-steps',
+                        options=[{'label': 'Yes', 'value': 'yes'}],
+                        value=[]
+                    ),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Selection parameter:'),
+                    dbc.Select(
+                        id='selection-parameter',
+                        options=[
+                            {'label': 'Mutual Information', 'value': 'Mutual Information'},
+                            {'label': 'Score', 'value': 'Score'}
+                        ],
+                        value='Mutual Information',
+                        style={
+                            'width': '200px', 
+                            'display': 'inline-block',
+                            'border': '1px solid #d0d7de',
+                            'borderRadius': '6px',
+                            'padding': '8px 12px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                            'backdropFilter': 'blur(10px)',
+                            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            'transition': 'all 0.2s ease',
+                            'fontSize': '14px'
+                        }
+                    ),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Class variable:'),
+                    dbc.Select(
+                        id='class-variable-nb-tan',
+                        options=[],  # Will be populated dynamically
+                        placeholder='Select the class variable',
+                        style={
+                            'width': '200px', 
+                            'display': 'inline-block',
+                            'border': '1px solid #d0d7de',
+                            'borderRadius': '6px',
+                            'padding': '8px 12px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                            'backdropFilter': 'blur(10px)',
+                            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            'transition': 'all 0.2s ease',
+                            'fontSize': '14px'
+                        }
+                    ),
+                ], style={'textAlign': 'center'}),
+            ], style={'display': 'none'}),
+            
+            # EDAs Parameters
+            html.Div(id='edas-parameters', className="card", children=[
+                html.H3("3. EDAs Model Parameters", style={'textAlign': 'center'}),
+                html.Div([
+                    html.Label('Number of generations:'),
+                    dcc.Input(id='n-generations', type='number', value=1, min=1, step=1, 
+                              style={'width': '60px'}),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Number of individuals per generation:'),
+                    dcc.Input(id='n-individuals', type='number', value=10, min=1, step=1,
+                              style={'width': '60px'}),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Number of selected candidates per generation:'),
+                    dcc.Input(id='n-candidates', type='number', value=5, min=1, step=1,
+                              style={'width': '60px'}),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Class variable:'),
+                    dbc.Select(
+                        id='class-variable-edas',
+                        options=[],  # Will be populated dynamically
+                        placeholder='Select the class variable',
+                        style={
+                            'width': '200px', 
+                            'display': 'inline-block',
+                            'border': '1px solid #d0d7de',
+                            'borderRadius': '6px',
+                            'padding': '8px 12px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                            'backdropFilter': 'blur(10px)',
+                            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            'transition': 'all 0.2s ease',
+                            'fontSize': '14px'
+                        }
+                    ),
+                ], style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Label('Fitness metric:'),
+                    dbc.Select(
+                        id='fitness-metric',
+                        options=[
+                            {'label': 'Accuracy', 'value': 'Accuracy'},
+                            {'label': 'BIC', 'value': 'BIC'}
+                        ],
+                        value='Accuracy',
+                        style={
+                            'width': '200px', 
+                            'display': 'inline-block',
+                            'border': '1px solid #d0d7de',
+                            'borderRadius': '6px',
+                            'padding': '8px 12px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                            'backdropFilter': 'blur(10px)',
+                            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            'transition': 'all 0.2s ease',
+                            'fontSize': '14px'
+                        }
+                    ),
+                ], style={'textAlign': 'center'}),
+            ], style={'display': 'none'}),
             
             # (C) "Run" button + progress messages
             html.Div([
@@ -313,39 +459,41 @@ app.layout = html.Div([
                 ], style={'textAlign': 'center'}),
             ], style={'textAlign': 'center'}),
 
+            # Main output area
             html.Div(id='model-output'),
-
+            
             ########################################################
-            # (D) Hidden inputs for parameters (NB/TAN or EDAs)
+            # ALL NAVIGATION BUTTONS - ALWAYS PRESENT, CONTROLLED BY VISIBILITY
             ########################################################
-            html.Div([
-                dcc.Input(id='jump-steps', type='number', style={'display': 'none'}),
-                dcc.Checklist(id='no-steps', 
-                            options=[{'label': 'Yes', 'value': 'yes'}], 
-                            value=[], 
-                            style={'display': 'none'}),
-                dcc.Dropdown(id='selection-parameter', style={'display': 'none'}),
-                dcc.Dropdown(id='class-variable', style={'display': 'none'}),
-
-                dcc.Input(id='n-generations', type='number', style={'display': 'none'}),
-                dcc.Input(id='n-individuals', type='number', style={'display': 'none'}),
-                dcc.Input(id='n-candidates', type='number', style={'display': 'none'}),
-                dcc.Dropdown(id='fitness-metric', style={'display': 'none'}),
-            ]),
-
-            ########################################################
-            # (E) Hidden buttons for step/gen navigation or model choices
-            ########################################################
-            html.Div([
-                html.Button('Previous', id='prev-step-button', n_clicks=0, style={'display': 'none'}),
-                html.Button('Next', id='next-step-button', n_clicks=0, style={'display': 'none'}),
-                html.Button('Choose this model', id='choose-model-button', n_clicks=0, style={'display': 'none'}),
-
-                html.Button('Previous Generation', id='prev-generation-button', n_clicks=0, style={'display': 'none'}),
-                html.Button('Next Generation', id='next-generation-button', n_clicks=0, style={'display': 'none'}),
-                html.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, style={'display': 'none'}),
-                html.Button('Show generations', id='show-generations-button-edas', n_clicks=0, style={'display': 'none'}),
-            ]),
+            # Step navigation for NB/TAN
+            html.Div(id='step-navigation', className="card", children=[
+                html.Div([
+                    dbc.Button('Previous', id='prev-step-button', n_clicks=0, color="secondary", className="me-2"),
+                    dbc.Button('Next', id='next-step-button', n_clicks=0, color="secondary", className="me-2"),
+                    dbc.Button('Choose this model', id='choose-model-button', n_clicks=0, color="success"),
+                ], style={'textAlign': 'center'}),
+            ], style={'display': 'none', 'marginTop': '20px'}),
+            
+            # Generation navigation for EDAs
+            html.Div(id='generation-navigation', className="card", children=[
+                html.Div([
+                    dbc.Button('Previous Generation', id='prev-generation-button', n_clicks=0, color="secondary", className="me-2"),
+                    dbc.Button('Next Generation', id='next-generation-button', n_clicks=0, color="secondary", className="me-2"),
+                    dbc.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, color="success", className="me-2"),
+                    dbc.Button('Show generations', id='show-generations-button-edas', n_clicks=0, color="info"),
+                ], style={'textAlign': 'center'}),
+            ], style={'display': 'none', 'marginTop': '20px'}),
+            
+            # Inference interface
+            html.Div(id='inference-interface', className="card", children=[
+                html.H3('Inference', style={'textAlign': 'center'}),
+                html.Div(id='evidence-controls', 
+                        style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
+                html.Div([
+                    dbc.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0, color="primary")
+                ], style={'textAlign': 'center', 'marginTop': '20px'}),
+                html.Div(id='inference-results-display')
+            ], style={'display': 'none', 'marginTop': '20px'}),
 
             ########################################################
             # (F) dcc.Store to keep data across callbacks
@@ -357,6 +505,7 @@ app.layout = html.Div([
             dcc.Store(id='current-generation-store'),
             dcc.Store(id='bn-model-store'),
             dcc.Store(id='inference-results'),
+            dcc.Store(id='app-state-store', data={'current_view': 'initial'}),  # Track app state
         ])
     ), #End of dcc.Loading
     #  popover **outside** the dcc.Loading
@@ -679,139 +828,49 @@ def update_output(contents, use_default_value, filename):
 # (B) Update model parameters depending on user choice
 # ----------------------------------------------------------------------------
 @app.callback(
-    Output('model-parameters', 'children'),
+    Output('nb-tan-parameters', 'style'),
+    Output('edas-parameters', 'style'),
+    Output('class-variable-nb-tan', 'options'),
+    Output('class-variable-edas', 'options'),
     Input('model-dropdown', 'value'),
     State('uploaded-data-store', 'data')
 )
 def update_parameters(model, data_json):
     if data_json is None:
-        return html.Div('Please upload a dataset first.', 
-                        style={'color': 'red','textAlign':'center','marginTop':'5px'})
+        return {'display': 'none'}, {'display': 'none'}, [], []
+    
     df = pd.read_json(io.StringIO(data_json), orient='split')
+    class_options = [{'label': col, 'value': col} for col in df.columns]
     
     if model in ['Naive Bayes', 'TAN']:
-        return html.Div(className="card", children=[
-            html.H3("3. Model Parameters", style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Iterations between steps:'),
-                dcc.Input(id='jump-steps-nb', type='number', value=0, min=0, step=1, style={'width': '60px'}),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Skip all steps:'),
-                dcc.Checklist(
-                    id='no-steps',
-                    options=[{'label': 'Yes', 'value': 'yes'}],
-                    value=[]
-                ),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Selection parameter:'),
-                dbc.Select(
-                    id='selection-parameter',
-                    options=[
-                        {'label': 'Mutual Information', 'value': 'Mutual Information'},
-                        {'label': 'Score', 'value': 'Score'}
-                    ],
-                    value='Mutual Information',
-                    style={
-                        'width': '200px', 
-                        'display': 'inline-block',
-                        'border': '1px solid #d0d7de',
-                        'borderRadius': '6px',
-                        'padding': '8px 12px',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
-                        'backdropFilter': 'blur(10px)',
-                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        'transition': 'all 0.2s ease',
-                        'fontSize': '14px'
-                    }
-                ),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Class variable:'),
-                dbc.Select(
-                    id='class-variable',
-                    options=[{'label': col, 'value': col} for col in df.columns],
-                    placeholder='Select the class variable',
-                    style={
-                        'width': '200px', 
-                        'display': 'inline-block',
-                        'border': '1px solid #d0d7de',
-                        'borderRadius': '6px',
-                        'padding': '8px 12px',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
-                        'backdropFilter': 'blur(10px)',
-                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        'transition': 'all 0.2s ease',
-                        'fontSize': '14px'
-                    }
-                ),
-            ], style={'textAlign': 'center'}),
-        ])
+        return {'display': 'block'}, {'display': 'none'}, class_options, []
     elif model == 'EDAs':
-        return html.Div(className="card", children=[
-            html.H3("EDAs Model Parameters", style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Number of generations:'),
-                dcc.Input(id='n-generations', type='number', value=1, min=1, step=1, 
-                          style={'width': '60px'}),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Number of individuals per generation:'),
-                dcc.Input(id='n-individuals', type='number', value=10, min=1, step=1,
-                          style={'width': '60px'}),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Number of selected candidates per generation:'),
-                dcc.Input(id='n-candidates', type='number', value=5, min=1, step=1,
-                          style={'width': '60px'}),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Class variable:'),
-                dbc.Select(
-                    id='class-variable',
-                    options=[{'label': col, 'value': col} for col in df.columns],
-                    placeholder='Select the class variable',
-                    style={
-                        'width': '200px', 
-                        'display': 'inline-block',
-                        'border': '1px solid #d0d7de',
-                        'borderRadius': '6px',
-                        'padding': '8px 12px',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
-                        'backdropFilter': 'blur(10px)',
-                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        'transition': 'all 0.2s ease',
-                        'fontSize': '14px'
-                    }
-                ),
-            ], style={'textAlign': 'center'}),
-            html.Div([
-                html.Label('Fitness metric:'),
-                dbc.Select(
-                    id='fitness-metric',
-                    options=[
-                        {'label': 'Accuracy', 'value': 'Accuracy'},
-                        {'label': 'BIC', 'value': 'BIC'}
-                    ],
-                    value='Accuracy',
-                    style={
-                        'width': '200px', 
-                        'display': 'inline-block',
-                        'border': '1px solid #d0d7de',
-                        'borderRadius': '6px',
-                        'padding': '8px 12px',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
-                        'backdropFilter': 'blur(10px)',
-                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        'transition': 'all 0.2s ease',
-                        'fontSize': '14px'
-                    }
-                ),
-            ], style={'textAlign': 'center'}),
-        ])
+        return {'display': 'none'}, {'display': 'block'}, [], class_options
     else:
-        return ''
+        return {'display': 'none'}, {'display': 'none'}, [], []
+
+# ----------------------------------------------------------------------------
+# Reset app callback
+# ----------------------------------------------------------------------------
+@app.callback(
+    Output('uploaded-data-store', 'data', allow_duplicate=True),
+    Output('model-results-store', 'data', allow_duplicate=True),
+    Output('current-step-store', 'data', allow_duplicate=True),
+    Output('edas-results-store', 'data', allow_duplicate=True),
+    Output('current-generation-store', 'data', allow_duplicate=True),
+    Output('bn-model-store', 'data', allow_duplicate=True),
+    Output('inference-results', 'data', allow_duplicate=True),
+    Output('model-dropdown', 'value', allow_duplicate=True),
+    Output('use-default-dataset', 'value', allow_duplicate=True),
+    Output('output-data-upload', 'children', allow_duplicate=True),
+    Input('reset-app-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_application(n_clicks):
+    if n_clicks > 0:
+        return (None, None, None, None, None, None, None, 
+                None, [], '')
+    return dash.no_update
 
 
 # ----------------------------------------------------------------------------
@@ -843,7 +902,8 @@ def update_parameters(model, data_json):
     State('jump-steps', 'value'),
     State('no-steps', 'value'),
     State('selection-parameter', 'value'),
-    State('class-variable', 'value'),
+    State('class-variable-nb-tan', 'value'),
+    State('class-variable-edas', 'value'),
     State('n-generations', 'value'),
     State('n-individuals', 'value'),
     State('n-candidates', 'value'),
@@ -863,7 +923,7 @@ def handle_model_run_and_navigation(
     edas_results_data, current_generation,
     bn_model_data,
     model, data_json,
-    jump_steps, no_steps, selection_parameter, class_variable,
+    jump_steps, no_steps, selection_parameter, class_variable_nb_tan, class_variable_edas,
     n_generations, n_individuals, n_candidates, fitness_metric
 ):
     ctx = callback_context
@@ -890,6 +950,7 @@ def handle_model_run_and_navigation(
         
         # NB or TAN
         if model in ['Naive Bayes', 'TAN']:
+            class_variable = class_variable_nb_tan
             if not class_variable:
                 print("Class variable not selected.")
                 return (dash.no_update,)*5
@@ -921,6 +982,7 @@ def handle_model_run_and_navigation(
 
         # EDAs
         elif model == 'EDAs':
+            class_variable = class_variable_edas
             if class_variable is None:
                 print("Class variable not selected.")
                 return (dash.no_update,)*5
@@ -998,7 +1060,7 @@ def handle_model_run_and_navigation(
 # (D) Inference callback
 # ----------------------------------------------------------------------------
 @app.callback(
-    Output('inference-results', 'data'),
+    Output('inference-results-display', 'children'),
     Input('calculate-inference-button', 'n_clicks'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'value'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'id'),
@@ -1029,46 +1091,110 @@ def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
 
 
 # ----------------------------------------------------------------------------
-# (E) Main output display logic
+# (E) Main output display logic - controls both output and navigation visibility
 # ----------------------------------------------------------------------------
 @app.callback(
     Output('model-output', 'children'),
+    Output('step-navigation', 'style'),
+    Output('generation-navigation', 'style'),
+    Output('inference-interface', 'style'),
+    Output('evidence-controls', 'children'),
     Input('model-results-store', 'data'),
     Input('current-step-store', 'data'),
     Input('edas-results-store', 'data'),
     Input('current-generation-store', 'data'),
     Input('bn-model-store', 'data'),
-    Input('inference-results', 'data'),
     prevent_initial_call=True
 )
-def update_model_output(model_results_data, current_step,
-                        edas_results_data, current_generation,
-                        bn_model_data, inference_results):
+def update_model_output_and_controls(model_results_data, current_step,
+                                    edas_results_data, current_generation,
+                                    bn_model_data):
+
+    # Default styles (hidden)
+    step_nav_style = {'display': 'none', 'marginTop': '20px'}
+    gen_nav_style = {'display': 'none', 'marginTop': '20px'}
+    inference_style = {'display': 'none', 'marginTop': '20px'}
+    evidence_controls = []
 
     # 1) If BN chosen => show inference
     if bn_model_data is not None:
-        return display_inference_window(bn_model_data, inference_results)
+        bn = deserialize_bayesnet(bn_model_data)
+        variables = bn.names()
+        evidence_controls = []
+
+        for var in variables:
+            labels = bn.variable(var).labels()
+            evidence_controls.append(
+                html.Div(children=[
+                    html.Label(f'{var}:'),
+                    dbc.Select(
+                        id={'type': 'evidence-dropdown', 'index': var},
+                        options=[{'label': lb, 'value': lb} for lb in [''] + list(labels)],
+                        value='',
+                        style={
+                            'width': '150px',
+                            'border': '1px solid #d0d7de',
+                            'borderRadius': '6px',
+                            'padding': '8px 12px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                            'backdropFilter': 'blur(10px)',
+                            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            'transition': 'all 0.2s ease',
+                            'fontSize': '14px'
+                        }
+                    )
+                ],
+                style={'display': 'inline-block', 'verticalAlign': 'top', 'margin': '5px 15px'})
+            )
+
+        inference_style = {'display': 'block', 'marginTop': '20px'}
+        output_content = html.Div('Select evidence values and click "Calculate Inference" to see results.')
 
     # 2) If EDAs => show best or generations
     elif edas_results_data is not None:
         if current_generation is None:
-            return display_edas_best_solution(edas_results_data)
+            output_content = display_edas_best_solution_content(edas_results_data)
+            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
         else:
-            return display_edas_generations(edas_results_data, current_generation)
+            output_content = display_edas_generations_content(edas_results_data, current_generation)
+            gen_nav_style = {'display': 'block', 'marginTop': '20px'}
 
     # 3) If NB/TAN => show steps
     elif model_results_data is not None and current_step is not None:
         figures_list = model_results_data['figures_list']
-        return display_step(figures_list, current_step)
+        output_content = display_step_content(figures_list, current_step)
+        step_nav_style = {'display': 'block', 'marginTop': '20px'}
 
     # 4) Otherwise
     else:
-        return html.Div('No model output to display.')
+        output_content = html.Div('No model output to display.')
+
+    return (output_content, step_nav_style, gen_nav_style, 
+            inference_style, evidence_controls)
 
 
 ########################################################################
 # 3) Helper functions exactly as in your code
 ########################################################################
+
+def display_edas_best_solution_content(edas_results_data):
+    umda_data = edas_results_data['umda']
+    umda = deserialize_umda(umda_data)
+    best_results_data = edas_results_data['best_results']
+    best_results = [deserialize_solution(sol_data) for sol_data in best_results_data]
+    best_res = max(best_results, key=attrgetter('fitness'))
+    fig = umda.from_chain_to_graph(best_res.chain)
+    img_base64 = fig_to_base64_image(fig)
+
+    return html.Div(className="card", children=[
+        html.H3('Best Markov Blanket structure obtained by the algorithm:',
+                style={'textAlign': 'center'}),
+        html.Img(src='data:image/png;base64,{}'.format(img_base64), 
+                 className="zoomable", 
+                 style={'display': 'block', 'margin': '0 auto'}),
+        html.P(f"Score (fitness): {best_res.fitness:.4f}", 
+               style={'textAlign': 'center', 'fontWeight': 'bold'}),
+    ])
 
 def display_edas_best_solution(edas_results_data):
     umda_data = edas_results_data['umda']
@@ -1095,6 +1221,46 @@ def display_edas_best_solution(edas_results_data):
                         id='show-generations-button-edas', n_clicks=0),
         ], style={'textAlign': 'center', 'marginTop': '20px'}),
     ])
+
+def display_edas_generations_content(edas_results_data, generation_index):
+    umda_data = edas_results_data['umda']
+    umda = deserialize_umda(umda_data)
+    best_results_data = edas_results_data['best_results']
+    best_results = [deserialize_solution(sol_data) for sol_data in best_results_data]
+    total_generations = len(edas_results_data['generation_information'])
+
+    figure = umda.from_chain_to_graph(best_results[generation_index].chain)
+    img = fig_to_base64_image(figure)
+
+    content = [
+        html.H3(
+            f'Generation {generation_index + 1} of {total_generations}',
+            style={'textAlign': 'center'}
+        ),
+        html.Img(
+            src='data:image/png;base64,{}'.format(img),
+            className="zoomable",
+            style={'display': 'block', 'margin': '0 auto'}
+        ),
+    ]
+
+    if generation_index > 0:
+        diff_figure = umda.graph_between_chains(
+            best_results[generation_index-1].chain,
+            best_results[generation_index].chain
+        )
+        diff_img = fig_to_base64_image(diff_figure)
+        content.append(html.H4(
+            'Differences with the previous generation',
+            style={'textAlign': 'center'}
+        ))
+        content.append(html.Img(
+            src='data:image/png;base64,{}'.format(diff_img),
+            className="zoomable",
+            style={'display': 'block', 'margin': '0 auto'}
+        ))
+
+    return html.Div(content, className="card")
 
 def display_edas_generations(edas_results_data, generation_index):
     umda_data = edas_results_data['umda']
@@ -1144,6 +1310,20 @@ def display_edas_generations(edas_results_data, generation_index):
 
     return html.Div(content, className="card")
 
+def display_step_content(figures_list, step_index):
+    data = figures_list[step_index]
+    img_data = data['fig']
+    score = cross_val_to_number(data['scores'])
+    total_steps = len(figures_list)
+
+    return html.Div(className="card", children=[
+        html.H3(f'Step {step_index + 1} of {total_steps}', style={'textAlign': 'center'}),
+        html.Img(src='data:image/png;base64,{}'.format(img_data), 
+                 className="zoomable", 
+                 style={'display': 'block', 'margin': '0 auto'}),
+        html.P(f'Score: {score}', style={'textAlign': 'center'}),
+    ])
+
 def display_step(figures_list, step_index):
     data = figures_list[step_index]
     img_data = data['fig']
@@ -1163,52 +1343,7 @@ def display_step(figures_list, step_index):
         ], style={'textAlign': 'center'}),
     ])
 
-def display_inference_window(bn_model_data, inference_results=None):
-    bn = deserialize_bayesnet(bn_model_data)
-    variables = bn.names()
-    evidence_selection = []
 
-    for var in variables:
-        labels = bn.variable(var).labels()
-        evidence_selection.append(
-            html.Div(children=[
-                html.Label(f'{var}:'),
-                dbc.Select(
-                    id={'type': 'evidence-dropdown', 'index': var},
-                    options=[{'label': lb, 'value': lb} for lb in [''] + list(labels)],
-                    value='',
-                    style={
-                        'width': '150px',
-                        'border': '1px solid #d0d7de',
-                        'borderRadius': '6px',
-                        'padding': '8px 12px',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
-                        'backdropFilter': 'blur(10px)',
-                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        'transition': 'all 0.2s ease',
-                        'fontSize': '14px'
-                    }
-                )
-            ],
-            style={'display': 'inline-block', 'verticalAlign': 'top', 'margin': '5px 15px'})
-        )
-
-    results_section = html.Div()
-    if inference_results is not None:
-        results_section = html.Div(className="card", children=[
-            inference_results
-        ], style={'marginTop': '20px'})
-
-    return html.Div(children=[
-            html.Div(className="card", children=[
-            html.H3('Inference', style={'textAlign': 'center'}),
-            html.Div(children=evidence_selection,
-                    style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
-            html.Div(children=[
-                html.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0)
-            ], style={'textAlign': 'center', 'marginTop': '20px'}),
-        ]),results_section,
-    ])
 
 def fig_to_base64_image(fig):
     img_bytes = io.BytesIO()
