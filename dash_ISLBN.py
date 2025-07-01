@@ -90,6 +90,62 @@ SAFARI_FIX_CSS = """
     }
 }
 
+/* === ENHANCED BUTTON STYLES === */
+/* Hover effects for all styled buttons */
+.btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+}
+
+/* Specific hover effects by color */
+.btn[style*="background-color: rgb(0, 123, 255)"]:hover,
+.btn[style*="backgroundColor: #007bff"]:hover {
+    background-color: #0056b3 !important;
+    border-color: #0056b3 !important;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.5) !important;
+}
+
+.btn[style*="background-color: rgb(40, 167, 69)"]:hover,
+.btn[style*="backgroundColor: #28a745"]:hover {
+    background-color: #1e7e34 !important;
+    border-color: #1e7e34 !important;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.4) !important;
+}
+
+.btn[style*="background-color: rgb(108, 117, 125)"]:hover,
+.btn[style*="backgroundColor: #6c757d"]:hover {
+    background-color: #545b62 !important;
+    border-color: #545b62 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+}
+
+.btn[style*="background-color: rgb(23, 162, 184)"]:hover,
+.btn[style*="backgroundColor: #17a2b8"]:hover {
+    background-color: #117a8b !important;
+    border-color: #117a8b !important;
+    box-shadow: 0 4px 12px rgba(23,162,184,0.4) !important;
+}
+
+.btn[style*="background-color: rgb(0, 162, 225)"]:hover,
+.btn[style*="backgroundColor: #00A2E1"]:hover {
+    background-color: #0085b8 !important;
+    border-color: #0085b8 !important;
+    box-shadow: 0 6px 16px rgba(0,162,225,0.6) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* Active/pressed state */
+.btn:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+/* Focus state for accessibility */
+.btn:focus {
+    outline: 3px solid rgba(0,123,255,0.3) !important;
+    outline-offset: 2px !important;
+}
+
 /* === DROPDOWN Z-INDEX FIXES === */
 /* Fix for dropdown menus appearing behind other elements */
 .Select-menu-outer, .Select-menu {
@@ -441,19 +497,21 @@ app.layout = html.Div([
                         ],
                         id='run-button',
                         n_clicks=0,
-                        color="info",
                         className="btn-lg",
                         style={
-                            'fontSize': '1.1rem',
-                            'padding': '0.75rem 2rem',
-                            'borderRadius': '8px',
-                            'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                            'fontSize': '1.2rem',
+                            'padding': '0.875rem 2.5rem',
+                            'borderRadius': '10px',
+                            'boxShadow': '0 4px 8px rgba(0,162,225,0.4)',
                             'transition': 'all 0.3s ease',
                             'backgroundColor': '#00A2E1',
-                            'border': 'none',
+                            'borderColor': '#00A2E1',
+                            'border': '2px solid #00A2E1',
                             'margin': '1rem 0',
                             'color': 'white',
-                            'fontWeight': '500'
+                            'fontWeight': '600',
+                            'textTransform': 'uppercase',
+                            'letterSpacing': '0.5px'
                         }
                     )
                 ], style={'textAlign': 'center'}),
@@ -468,19 +526,101 @@ app.layout = html.Div([
             # Step navigation for NB/TAN
             html.Div(id='step-navigation', className="card", children=[
                 html.Div([
-                    dbc.Button('Previous', id='prev-step-button', n_clicks=0, color="secondary", className="me-2"),
-                    dbc.Button('Next', id='next-step-button', n_clicks=0, color="secondary", className="me-2"),
-                    dbc.Button('Choose this model', id='choose-model-button', n_clicks=0, color="success"),
+                    dbc.Button('Previous', id='prev-step-button', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#6c757d',
+                                  'borderColor': '#6c757d',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #6c757d',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 16px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.2)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Next', id='next-step-button', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#6c757d',
+                                  'borderColor': '#6c757d',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #6c757d',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 16px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.2)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Choose this model', id='choose-model-button', n_clicks=0,
+                              style={
+                                  'backgroundColor': '#28a745',
+                                  'borderColor': '#28a745',
+                                  'color': 'white',
+                                  'fontWeight': '600',
+                                  'border': '2px solid #28a745',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 20px',
+                                  'boxShadow': '0 3px 6px rgba(40,167,69,0.3)',
+                                  'transition': 'all 0.3s ease'
+                              }),
                 ], style={'textAlign': 'center'}),
             ], style={'display': 'none', 'marginTop': '20px'}),
             
             # Generation navigation for EDAs
             html.Div(id='generation-navigation', className="card", children=[
                 html.Div([
-                    dbc.Button('Previous Generation', id='prev-generation-button', n_clicks=0, color="secondary", className="me-2"),
-                    dbc.Button('Next Generation', id='next-generation-button', n_clicks=0, color="secondary", className="me-2"),
-                    dbc.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, color="success", className="me-2"),
-                    dbc.Button('Show generations', id='show-generations-button-edas', n_clicks=0, color="info"),
+                    dbc.Button('Previous Generation', id='prev-generation-button', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#6c757d',
+                                  'borderColor': '#6c757d',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #6c757d',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 16px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.2)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Next Generation', id='next-generation-button', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#6c757d',
+                                  'borderColor': '#6c757d',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #6c757d',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 16px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.2)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Choose this model (EDAs)', id='choose-model-button-edas', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#28a745',
+                                  'borderColor': '#28a745',
+                                  'color': 'white',
+                                  'fontWeight': '600',
+                                  'border': '2px solid #28a745',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 20px',
+                                  'boxShadow': '0 3px 6px rgba(40,167,69,0.3)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Show generations', id='show-generations-button-edas', n_clicks=0,
+                              style={
+                                  'backgroundColor': '#17a2b8',
+                                  'borderColor': '#17a2b8',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #17a2b8',
+                                  'borderRadius': '8px',
+                                  'padding': '8px 16px',
+                                  'boxShadow': '0 2px 4px rgba(23,162,184,0.3)',
+                                  'transition': 'all 0.3s ease'
+                              }),
                 ], style={'textAlign': 'center'}),
             ], style={'display': 'none', 'marginTop': '20px'}),
             
@@ -490,8 +630,33 @@ app.layout = html.Div([
                 html.Div(id='evidence-controls', 
                         style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center'}),
                 html.Div([
-                    dbc.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0, color="primary", className="me-2"),
-                    dbc.Button('Back to Results', id='back-to-results-button', n_clicks=0, color="secondary")
+                    dbc.Button('Calculate Inference', id='calculate-inference-button', n_clicks=0, 
+                              className="me-2",
+                              style={
+                                  'backgroundColor': '#007bff',
+                                  'borderColor': '#007bff',
+                                  'color': 'white',
+                                  'fontWeight': '600',
+                                  'border': '2px solid #007bff',
+                                  'borderRadius': '8px',
+                                  'padding': '10px 24px',
+                                  'fontSize': '16px',
+                                  'boxShadow': '0 3px 6px rgba(0,123,255,0.4)',
+                                  'transition': 'all 0.3s ease'
+                              }),
+                    dbc.Button('Back to Results', id='back-to-results-button', n_clicks=0,
+                              style={
+                                  'backgroundColor': '#6c757d',
+                                  'borderColor': '#6c757d',
+                                  'color': 'white',
+                                  'fontWeight': '500',
+                                  'border': '2px solid #6c757d',
+                                  'borderRadius': '8px',
+                                  'padding': '10px 20px',
+                                  'fontSize': '16px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.2)',
+                                  'transition': 'all 0.3s ease'
+                              })
                 ], style={'textAlign': 'center', 'marginTop': '20px'}),
                 html.Div(id='inference-results-display')
             ], style={'display': 'none', 'marginTop': '20px'}),
