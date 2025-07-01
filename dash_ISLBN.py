@@ -89,6 +89,50 @@ SAFARI_FIX_CSS = """
         background: rgba(255, 255, 255, 0.2) !important;
     }
 }
+
+/* === DROPDOWN Z-INDEX FIXES === */
+/* Fix for dropdown menus appearing behind other elements */
+.Select-menu-outer, .Select-menu {
+    z-index: 9999 !important;
+}
+
+/* Dash dropdown menu container */
+.dash-dropdown .Select-menu-outer {
+    z-index: 9999 !important;
+}
+
+/* General dropdown fixes */
+.dropdown-menu {
+    z-index: 9999 !important;
+}
+
+/* Dash Core Components dropdown */
+.dash-table-container .dash-dropdown .Select-menu-outer,
+.dash-dropdown .Select-menu-outer {
+    z-index: 9999 !important;
+}
+
+/* Additional dropdown container fixes */
+.VirtualizedSelectOption, .VirtualizedSelectFocusedOption {
+    z-index: 9999 !important;
+}
+
+/* Ensure cards don't interfere with dropdowns */
+.card {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure buttons don't interfere with dropdowns */
+.btn {
+    position: relative;
+    z-index: 10;
+}
+
+/* But dropdown menus should always be on top */
+div[data-dash-is-loading="true"] {
+    z-index: 1 !important;
+}
 </style>
 """
 
@@ -217,7 +261,7 @@ app.layout = html.Div([
             html.Div(className="card", children=[
                 html.H3("2. Select Model", style={'textAlign': 'center'}),
             
-                dcc.Dropdown(
+                dbc.Select(
                     id='model-dropdown',
                     options=[
                         {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
@@ -225,7 +269,18 @@ app.layout = html.Div([
                         {'label': 'Markov Blanket selection by EDAs', 'value': 'EDAs'}
                     ],
                     placeholder='Select a model',
-                    style={'width': '70%', 'margin': '0 auto'}
+                    style={
+                        'width': '70%', 
+                        'margin': '0 auto',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 ),
             ]),
             html.Div(id='model-parameters'),
@@ -651,23 +706,45 @@ def update_parameters(model, data_json):
             ], style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Selection parameter:'),
-                dcc.Dropdown(
+                dbc.Select(
                     id='selection-parameter',
                     options=[
                         {'label': 'Mutual Information', 'value': 'Mutual Information'},
                         {'label': 'Score', 'value': 'Score'}
                     ],
                     value='Mutual Information',
-                    style={'width': '200px', 'display': 'inline-block'}
+                    style={
+                        'width': '200px', 
+                        'display': 'inline-block',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 ),
             ], style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Class variable:'),
-                dcc.Dropdown(
+                dbc.Select(
                     id='class-variable',
                     options=[{'label': col, 'value': col} for col in df.columns],
                     placeholder='Select the class variable',
-                    style={'width': '200px', 'display': 'inline-block'}
+                    style={
+                        'width': '200px', 
+                        'display': 'inline-block',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 ),
             ], style={'textAlign': 'center'}),
         ])
@@ -691,23 +768,45 @@ def update_parameters(model, data_json):
             ], style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Class variable:'),
-                dcc.Dropdown(
+                dbc.Select(
                     id='class-variable',
                     options=[{'label': col, 'value': col} for col in df.columns],
                     placeholder='Select the class variable',
-                    style={'width': '200px', 'display': 'inline-block'}
+                    style={
+                        'width': '200px', 
+                        'display': 'inline-block',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 ),
             ], style={'textAlign': 'center'}),
             html.Div([
                 html.Label('Fitness metric:'),
-                dcc.Dropdown(
+                dbc.Select(
                     id='fitness-metric',
                     options=[
                         {'label': 'Accuracy', 'value': 'Accuracy'},
                         {'label': 'BIC', 'value': 'BIC'}
                     ],
                     value='Accuracy',
-                    style={'width': '200px', 'display': 'inline-block'}
+                    style={
+                        'width': '200px', 
+                        'display': 'inline-block',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 ),
             ], style={'textAlign': 'center'}),
         ])
@@ -1074,12 +1173,21 @@ def display_inference_window(bn_model_data, inference_results=None):
         evidence_selection.append(
             html.Div(children=[
                 html.Label(f'{var}:'),
-                dcc.Dropdown(
+                dbc.Select(
                     id={'type': 'evidence-dropdown', 'index': var},
                     options=[{'label': lb, 'value': lb} for lb in [''] + list(labels)],
                     value='',
-                    clearable=True,
-                    style={'width': '150px'}
+                    style={
+                        'width': '150px',
+                        'border': '1px solid #d0d7de',
+                        'borderRadius': '6px',
+                        'padding': '8px 12px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.8)',
+                        'backdropFilter': 'blur(10px)',
+                        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        'transition': 'all 0.2s ease',
+                        'fontSize': '14px'
+                    }
                 )
             ],
             style={'display': 'inline-block', 'verticalAlign': 'top', 'margin': '5px 15px'})
