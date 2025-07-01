@@ -263,25 +263,7 @@ app.layout = html.Div([
                 style={"marginBottom": "20px"}
             ),
             
-            # Reset button (always visible)
-            html.Div([
-                dbc.Button(
-                    [
-                        html.I(className="fas fa-redo me-2"),
-                        "Reset Application"
-                    ],
-                    id='reset-app-button',
-                    n_clicks=0,
-                    color="secondary",
-                    className="btn-sm",
-                    style={
-                        'fontSize': '0.9rem',
-                        'padding': '0.5rem 1rem',
-                        'borderRadius': '6px',
-                        'marginBottom': '20px'
-                    }
-                )
-            ], style={'textAlign': 'center'}),
+
             
             ########################################################
             # (A) Data upload
@@ -1025,29 +1007,7 @@ def update_parameters(model, data_json):
     else:
         return {'display': 'none'}, {'display': 'none'}, [], []
 
-# ----------------------------------------------------------------------------
-# Reset app callback
-# ----------------------------------------------------------------------------
-@app.callback(
-    Output('uploaded-data-store', 'data', allow_duplicate=True),
-    Output('model-results-store', 'data', allow_duplicate=True),
-    Output('current-step-store', 'data', allow_duplicate=True),
-    Output('edas-results-store', 'data', allow_duplicate=True),
-    Output('current-generation-store', 'data', allow_duplicate=True),
-    Output('bn-model-store', 'data', allow_duplicate=True),
-    Output('inference-results', 'data', allow_duplicate=True),
-    Output('inference-results-display', 'children', allow_duplicate=True),
-    Output('model-dropdown', 'value', allow_duplicate=True),
-    Output('use-default-dataset', 'value', allow_duplicate=True),
-    Output('output-data-upload', 'children', allow_duplicate=True),
-    Input('reset-app-button', 'n_clicks'),
-    prevent_initial_call=True
-)
-def reset_application(n_clicks):
-    if n_clicks > 0:
-        return (None, None, None, None, None, None, None, html.Div(),
-                None, [], '')
-    return dash.no_update
+
 
 
 # ----------------------------------------------------------------------------
