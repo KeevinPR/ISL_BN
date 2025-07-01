@@ -871,6 +871,7 @@ def update_parameters(model, data_json):
     Output('current-generation-store', 'data', allow_duplicate=True),
     Output('bn-model-store', 'data', allow_duplicate=True),
     Output('inference-results', 'data', allow_duplicate=True),
+    Output('inference-results-display', 'children', allow_duplicate=True),
     Output('model-dropdown', 'value', allow_duplicate=True),
     Output('use-default-dataset', 'value', allow_duplicate=True),
     Output('output-data-upload', 'children', allow_duplicate=True),
@@ -879,7 +880,7 @@ def update_parameters(model, data_json):
 )
 def reset_application(n_clicks):
     if n_clicks > 0:
-        return (None, None, None, None, None, None, None, 
+        return (None, None, None, None, None, None, None, html.Div(),
                 None, [], '')
     return dash.no_update
 
@@ -893,6 +894,7 @@ def reset_application(n_clicks):
     Output('edas-results-store', 'data'),
     Output('current-generation-store', 'data'),
     Output('bn-model-store', 'data'),
+    Output('inference-results-display', 'children'),
 
     Input('run-button', 'n_clicks'),
     Input('prev-step-button', 'n_clicks'),
@@ -952,6 +954,7 @@ def handle_model_run_and_navigation(
     edas_results_data_out = edas_results_data
     current_generation_out = current_generation
     bn_model_data_out = bn_model_data
+    inference_results_out = dash.no_update  # Don't change inference results by default
 
     # RUN MODEL
     if button_id == 'run-button':
@@ -1050,6 +1053,8 @@ def handle_model_run_and_navigation(
         # Clear model results to show inference interface
         model_results_data_out = None
         current_step_out = None
+        # Clear previous inference results
+        inference_results_out = html.Div()
 
     # EDAS GENERATION NAV
     elif button_id in ['prev-generation-button', 'next-generation-button']:
@@ -1080,13 +1085,16 @@ def handle_model_run_and_navigation(
         # Clear EDAs results to show inference interface
         edas_results_data_out = None
         current_generation_out = None
+        # Clear previous inference results
+        inference_results_out = html.Div()
 
     return (
         model_results_data_out,
         current_step_out,
         edas_results_data_out,
         current_generation_out,
-        bn_model_data_out
+        bn_model_data_out,
+        inference_results_out
     )
 
 
@@ -1094,7 +1102,7 @@ def handle_model_run_and_navigation(
 # (D) Inference callback
 # ----------------------------------------------------------------------------
 @app.callback(
-    Output('inference-results-display', 'children'),
+    Output('inference-results-display', 'children', allow_duplicate=True),
     Input('calculate-inference-button', 'n_clicks'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'value'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'id'),
