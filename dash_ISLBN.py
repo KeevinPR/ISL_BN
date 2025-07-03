@@ -9,6 +9,14 @@ import matplotlib.pyplot as plt
 import pyAgrum as gum
 import tempfile
 import ast
+import warnings
+import logging
+
+# Configure warnings and logging similar to MRE
+warnings.filterwarnings("ignore")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 from NB import NB_k_fold_with_steps, cross_val_to_number
 from TAN import NB_TAN_k_fold_with_steps
@@ -31,6 +39,46 @@ app = dash.Dash(
     suppress_callback_exceptions=True
 )
 server = app.server
+
+########################################################################
+# 2) Notification system functions (similar to MRE)
+########################################################################
+
+def show_error(message, header="Error"):
+    """Show error notification"""
+    return {
+        'message': message,
+        'header': header,
+        'icon': 'danger'
+    }
+
+def show_success(message, header="Success"):
+    """Show success notification"""
+    return {
+        'message': message,
+        'header': header,
+        'icon': 'success'
+    }
+
+def show_warning(message, header="Warning"):
+    """Show warning notification"""
+    return {
+        'message': message,
+        'header': header,
+        'icon': 'warning'
+    }
+
+def show_info(message, header="Information"):
+    """Show info notification"""
+    return {
+        'message': message,
+        'header': header,
+        'icon': 'info'
+    }
+
+########################################################################
+# 3) Safari Compatibility CSS Fix for Liquid Glass Effects
+########################################################################
 
 # Safari Compatibility CSS Fix for Liquid Glass Effects
 SAFARI_FIX_CSS = """
@@ -198,6 +246,19 @@ app.layout = html.Div([
     html.Div([
         dcc.Markdown(SAFARI_FIX_CSS, dangerously_allow_html=True)
     ], style={'display': 'none'}),
+    
+    # Notification system (similar to MRE)
+    dcc.Store(id='notification-store'),
+    html.Div(id='notification-container', style={
+        'position': 'fixed',
+        'bottom': '20px',
+        'right': '20px',
+        'zIndex': '1000',
+        'width': '300px',
+        'transition': 'all 0.3s ease-in-out',
+        'transform': 'translateY(100%)',
+        'opacity': '0'
+    }),
     
     dcc.Loading(
         id="global-spinner",
@@ -790,94 +851,169 @@ def linear_dependent_features(df, threshold=1.0):
 
 def parse_content(content, filename, missing_threshold=0.3, sample_size=None):
     """
-    Reads base64 content, applies multiple transformations:
+    Reads base64 content, applies multiple transformations scientifically appropriate for Bayesian Networks:
+      - Validates file format and content
       - Removes columns with > (missing_threshold * 100)% of NaNs
       - Removes rows with NaNs in the remaining columns
-      - Drops constant columns
-      - Renames columns to remove problematic characters (e.g., hyphens -> '_')
-      - Converts object -> category, numbers -> float64
+      - Drops constant columns (inappropriate for BN learning)
+      - Renames columns to remove problematic characters
+      - Discretizes continuous variables for BN compatibility
       - Resets the index
       - Removes linearly dependent features
       - (Optional) Samples the dataset if it's too large
     Returns a cleaned DataFrame or None if something fails.
     """
     if not content:
+        logger.error("Empty content provided to parse_content")
         return None
 
     try:
+        logger.info(f"Starting to parse file: {filename}")
+        
         # Separate the base64 content string and decode
         _, content_string = content.split(',')
         decoded = base64.b64decode(content_string)
 
-        # Read as CSV/text file
+        # Read as CSV/text file with robust parsing
         filename_lower = filename.lower()
-        # Extract the actual filename from a potential path
         base_filename = filename_lower.split('/')[-1]
 
         is_csv = base_filename.endswith('.csv')
         is_data = base_filename.endswith('.data')
         is_dat = base_filename.endswith('.dat')
+        is_txt = base_filename.endswith('.txt')
         has_no_extension = '.' not in base_filename
 
-        if is_csv or is_data or is_dat or has_no_extension:
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')),
-                sep=None, # Auto-detect separator
-                engine='python',
-                na_values='?' # Common missing value indicator
-            )
+        if is_csv or is_data or is_dat or is_txt or has_no_extension:
+            # Try multiple separators and encodings
+            try:
+                df = pd.read_csv(
+                    io.StringIO(decoded.decode('utf-8')),
+                    sep=None,  # Auto-detect separator
+                    engine='python',
+                    na_values=['?', '', 'NA', 'na', 'NULL', 'null', 'NaN', 'nan'],
+                    keep_default_na=True
+                )
+            except UnicodeDecodeError:
+                # Try with different encoding
+                df = pd.read_csv(
+                    io.StringIO(decoded.decode('latin-1')),
+                    sep=None,
+                    engine='python',
+                    na_values=['?', '', 'NA', 'na', 'NULL', 'null', 'NaN', 'nan'],
+                    keep_default_na=True
+                )
         else:
-            # If the file has an extension and it's not one of the recognized ones
-            print(f"Unsupported file type: {filename}. Attempting to parse will likely fail or lead to an error message.")
-            # The function will return None, and the calling callback will display a generic error.
-            # For a more specific message here, this function would need to return an error string/object.
+            logger.error(f"Unsupported file type: {filename}")
+            return None
+
+        logger.info(f"Initial dataset shape: {df.shape}")
+        
+        # Basic validation
+        if df.empty:
+            logger.error("Dataset is empty after parsing")
+            return None
+            
+        if len(df.columns) == 0:
+            logger.error("No columns found in dataset")
             return None
 
         # 1) Remove columns that have more than X% of NaNs
-        #    threshold=int(0.3*len(df)) => 30%: if a column has <70% non-null, drop it.
+        initial_cols = len(df.columns)
         df = df.dropna(axis=1, thresh=int((1 - missing_threshold) * len(df)))
+        if len(df.columns) < initial_cols:
+            logger.info(f"Removed {initial_cols - len(df.columns)} columns with >{missing_threshold*100}% missing values")
 
         # 2) Remove rows with any NaNs in the remaining columns
+        initial_rows = len(df)
         df = df.dropna(axis=0)
+        if len(df) < initial_rows:
+            logger.info(f"Removed {initial_rows - len(df)} rows with missing values")
 
-        # 3) Remove constant columns
-        index_constant = np.where(df.nunique() == 1)[0]
-        constant_columns = [df.columns[i] for i in index_constant]
-        df.drop(columns=constant_columns, inplace=True)
+        # 3) Remove constant columns (not useful for BN learning)
+        constant_columns = [col for col in df.columns if df[col].nunique() <= 1]
+        if constant_columns:
+            df.drop(columns=constant_columns, inplace=True)
+            logger.info(f"Removed {len(constant_columns)} constant columns: {constant_columns}")
 
         # 4) (Optional) Sampling if the dataset is too large
         if sample_size is not None and len(df) > sample_size:
             df = df.sample(n=sample_size, random_state=42)
+            logger.info(f"Sampled dataset to {sample_size} rows")
 
-        # 5) Rename columns with problematic characters (e.g., hyphens) => underscores
-        #    You can adjust the regular expression to fit your needs:
+        # 5) Rename columns with problematic characters
+        original_columns = df.columns.tolist()
         df.columns = [
-            re.sub(r'[^a-zA-Z0-9]+', '_', str(col))  # anything non-alphanumeric => '_'
+            re.sub(r'[^a-zA-Z0-9]+', '_', str(col)).strip('_')
             for col in df.columns
         ]
+        # Ensure no duplicate column names
+        df.columns = pd.Index(df.columns).str.replace(r'_+', '_', regex=True)
+        
+        if not df.columns.equals(pd.Index(original_columns)):
+            logger.info("Renamed columns to remove special characters")
 
-        # 6) Convert types: object -> category, number -> float64
-        cat_data = df.select_dtypes(include=['object']).astype('category')
-        for c in cat_data.columns:
-            df[c] = cat_data[c]
-
-        float_data = df.select_dtypes(include=['int', 'float', 'number']).astype('float64')
-        for c in float_data.columns:
-            df[c] = float_data[c]
+        # 6) Convert data types appropriately for Bayesian Networks
+        for col in df.columns:
+            try:
+                # Check if column has few unique values (likely categorical)
+                unique_vals = df[col].nunique()
+                total_vals = len(df[col].dropna())
+                
+                if df[col].dtype == 'object' or unique_vals <= min(10, total_vals * 0.05):
+                    # Convert to categorical
+                    df[col] = df[col].astype('category')
+                    logger.debug(f"Column '{col}' converted to categorical ({unique_vals} categories)")
+                else:
+                    # For continuous variables, discretize them for BN compatibility
+                    if df[col].dtype in ['int64', 'float64'] and unique_vals > 10:
+                        # Use quantile-based discretization
+                        try:
+                            df[col] = pd.cut(df[col], bins=5, labels=['very_low', 'low', 'medium', 'high', 'very_high'])
+                            logger.info(f"Discretized continuous column '{col}' into 5 bins")
+                        except Exception:
+                            # If binning fails, convert to categorical as-is
+                            df[col] = df[col].astype('category')
+                    else:
+                        # Convert to categorical
+                        df[col] = df[col].astype('category')
+            except Exception as e:
+                logger.warning(f"Error processing column '{col}': {e}")
+                # Default to categorical
+                df[col] = df[col].astype('category')
 
         # 7) Reset the index
         df.reset_index(drop=True, inplace=True)
 
-        # 8) Remove linearly dependent features
-        #    (Adjust 'threshold' in linear_dependent_features according to your use case)
-        to_remove_features = linear_dependent_features(df, threshold=1.0)
-        if to_remove_features:
-            df.drop(columns=to_remove_features, inplace=True, errors='ignore')
+        # 8) Remove linearly dependent features (not scientifically appropriate for BNs)
+        try:
+            to_remove_features = linear_dependent_features(df, threshold=1.0)
+            if to_remove_features:
+                df.drop(columns=to_remove_features, inplace=True, errors='ignore')
+                logger.info(f"Removed {len(to_remove_features)} linearly dependent features")
+        except Exception as e:
+            logger.warning(f"Error checking linear dependence: {e}")
 
+        # Final validation
+        if df.empty:
+            logger.error("Dataset is empty after processing")
+            return None
+            
+        if len(df.columns) < 2:
+            logger.error("Dataset has fewer than 2 columns after processing")
+            return None
+            
+        if len(df) < 5:
+            logger.error("Dataset has fewer than 5 rows after processing")
+            return None
+
+        logger.info(f"Successfully processed dataset: {df.shape[0]} rows, {df.shape[1]} columns")
+        logger.info(f"Column types: {df.dtypes.value_counts().to_dict()}")
+        
         return df
 
     except Exception as e:
-        print(f"Error parsing file: {e}")
+        logger.error(f"Error parsing file {filename}: {e}")
         return None
 # ----------------------------------------------------------------------------
 # Callback to toggle the popover for the upload help button
@@ -904,12 +1040,13 @@ def toggle_dataset_requirements_popover(n, is_open):
     return is_open
 
 # ----------------------------------------------------------------------------
-# (A) Callback for uploading data
+# (A) Callback for uploading data with enhanced error handling
 # ----------------------------------------------------------------------------
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('uploaded-data-store', 'data'),
     Output('use-default-dataset', 'value', allow_duplicate=True),
+    Output('notification-store', 'data'),
     Input('upload-data', 'contents'),
     Input('use-default-dataset', 'value'),
     State('upload-data', 'filename'),
@@ -922,28 +1059,111 @@ def update_output(contents, use_default_value, filename):
     # A) If user has uploaded a file manually (PRIORITY OVER DEFAULT)
     # ---------------
     if contents is not None and filename is not None:
-        df = parse_content(
-            contents,
-            filename,
-            missing_threshold=0.3,
-            sample_size=None  # or pick some limit if you want sampling
-        )
-        
-        if df is not None:
-            # Return success message + the cleaned df + CLEAR default checkbox
+        try:
+            logger.info(f"Processing uploaded file: {filename}")
+            
+            # Validate file extension
+            filename_lower = filename.lower()
+            valid_extensions = ['.csv', '.data', '.dat', '.txt']
+            if not any(filename_lower.endswith(ext) for ext in valid_extensions):
+                error_msg = f"Unsupported file format. Please upload files with extensions: {', '.join(valid_extensions)}"
+                logger.error(f"Invalid file extension: {filename}")
+                return (
+                    html.Div([
+                        html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                        error_msg
+                    ], style={'color': 'red', 'textAlign': 'center'}),
+                    None,
+                    [],
+                    show_error(error_msg, "Invalid File Format")
+                )
+            
+            # Validate file size (basic check - empty content)
+            if len(contents.split(',')[1]) < 100:  # Very small file check
+                error_msg = "File appears to be empty or too small. Please check your file content."
+                logger.error(f"File too small: {filename}")
+                return (
+                    html.Div([
+                        html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                        error_msg
+                    ], style={'color': 'red', 'textAlign': 'center'}),
+                    None,
+                    [],
+                    show_error(error_msg, "Invalid File Size")
+                )
+            
+            df = parse_content(
+                contents,
+                filename,
+                missing_threshold=0.3,
+                sample_size=None
+            )
+            
+            if df is not None:
+                # Additional validation checks
+                if len(df.columns) < 2:
+                    error_msg = "Dataset must have at least 2 columns for Bayesian Network learning."
+                    logger.error(f"Insufficient columns: {len(df.columns)} in {filename}")
+                    return (
+                        html.Div([
+                            html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                            error_msg
+                        ], style={'color': 'red', 'textAlign': 'center'}),
+                        None,
+                        [],
+                        show_error(error_msg, "Insufficient Data")
+                    )
+                
+                if len(df) < 10:
+                    error_msg = "Dataset must have at least 10 rows for reliable model training."
+                    logger.error(f"Insufficient rows: {len(df)} in {filename}")
+                    return (
+                        html.Div([
+                            html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                            error_msg
+                        ], style={'color': 'red', 'textAlign': 'center'}),
+                        None,
+                        [],
+                        show_error(error_msg, "Insufficient Data")
+                    )
+                
+                success_msg = f"Dataset successfully loaded: {len(df)} rows, {len(df.columns)} variables"
+                logger.info(f"Successfully processed: {filename} - {len(df)} rows, {len(df.columns)} columns")
+                
+                return (
+                    html.Div([
+                        html.I(className="fa fa-check-circle me-2", style={'color': 'green'}),
+                        html.H5(filename, style={'display': 'inline', 'marginLeft': '5px'}),
+                        html.P(success_msg, style={'margin': '5px 0'})
+                    ], style={'color': 'green', 'textAlign': 'center'}),
+                    df.to_json(date_format='iso', orient='split'),
+                    [],  # Clear the default dataset checkbox
+                    show_success(success_msg, "File Uploaded Successfully")
+                )
+            else:
+                error_msg = "Error processing file. Please check file format and content."
+                logger.error(f"Parse content failed for: {filename}")
+                return (
+                    html.Div([
+                        html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                        error_msg
+                    ], style={'color': 'red', 'textAlign': 'center'}),
+                    None,
+                    [],
+                    show_error(error_msg, "File Processing Error")
+                )
+                
+        except Exception as e:
+            error_msg = f"Unexpected error processing file: {str(e)}"
+            logger.error(f"Exception processing {filename}: {e}")
             return (
                 html.Div([
-                    html.H5(filename),
-                    html.P('File uploaded and processed successfully.')
-                ]),
-                df.to_json(date_format='iso', orient='split'),
-                []  # Clear the default dataset checkbox
-            )
-        else:
-            return (
-                html.Div(['There was an error processing the file with parse_content.']),
+                    html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                    error_msg
+                ], style={'color': 'red', 'textAlign': 'center'}),
                 None,
-                []  # Clear the default dataset checkbox even on error
+                [],
+                show_error(error_msg, "Processing Error")
             )
     
     # ---------------
@@ -951,6 +1171,8 @@ def update_output(contents, use_default_value, filename):
     # ---------------
     elif 'default' in use_default_value:
         try:
+            logger.info("Loading default dataset")
+            
             # 1) Read the default file contents
             with open(default_path, 'r', encoding='utf-8') as f:
                 raw_text = f.read()
@@ -958,36 +1180,52 @@ def update_output(contents, use_default_value, filename):
             # 2) Convert it to base64 so we can use parse_content the same way
             content_b64 = "data:text/plain;base64," + base64.b64encode(raw_text.encode()).decode()
             
-            # 3) Call parse_content. Let's pass a missing_threshold=0.3, sample_size=None, but you can tweak
+            # 3) Call parse_content
             df = parse_content(content_b64, "cars_example.data", missing_threshold=0.3, sample_size=None)
             
             if df is None:
+                error_msg = "Error processing the default dataset."
+                logger.error("Failed to process default dataset")
                 return (
-                    html.Div(["Error processing the default dataset with parse_content."]), 
+                    html.Div([
+                        html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                        error_msg
+                    ], style={'color': 'red', 'textAlign': 'center'}),
                     None,
-                    use_default_value  # Keep current checkbox state
+                    use_default_value,
+                    show_error(error_msg, "Default Dataset Error")
                 )
             
-            # If everything is good, we notify the user + store the cleaned df
+            success_msg = f"Default dataset loaded: {len(df)} rows, {len(df.columns)} variables"
+            logger.info(f"Successfully loaded default dataset - {len(df)} rows, {len(df.columns)} columns")
+            
             return (
                 html.Div([
+                    html.I(className="fa fa-check-circle me-2", style={'color': 'green'}),
                     html.P('Using default dataset: cars_example.data',
-                           style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0'})
-                ]),
+                           style={'color': 'green', 'fontWeight': 'bold', 'margin': '10px 0', 'display': 'inline'})
+                ], style={'textAlign': 'center'}),
                 df.to_json(date_format='iso', orient='split'),
-                use_default_value  # Keep default checkbox checked
+                use_default_value,  # Keep default checkbox checked
+                show_success(success_msg, "Default Dataset Loaded")
             )
         except Exception as e:
+            error_msg = f"Error reading default dataset: {str(e)}"
+            logger.error(f"Exception loading default dataset: {e}")
             return (
-                html.Div([f'Error reading default dataset: {e}']), 
+                html.Div([
+                    html.I(className="fa fa-exclamation-triangle me-2", style={'color': 'red'}),
+                    error_msg
+                ], style={'color': 'red', 'textAlign': 'center'}),
                 None,
-                use_default_value  # Keep current checkbox state
+                use_default_value,
+                show_error(error_msg, "Default Dataset Error")
             )
 
     # ---------------
     # C) Otherwise (no upload, no default)
     # ---------------
-    return '', None, use_default_value  # Keep current checkbox state
+    return '', None, use_default_value, None  # Keep current checkbox state, no notification
 
 # ----------------------------------------------------------------------------
 # (B) Update model parameters depending on user choice
@@ -1018,7 +1256,7 @@ def update_parameters(model, data_json):
 
 
 # ----------------------------------------------------------------------------
-# (C) Main callback to handle "Run Model" and navigation
+# (C) Main callback to handle "Run Model" and navigation with error handling
 # ----------------------------------------------------------------------------
 @app.callback(
     Output('model-results-store', 'data'),
@@ -1027,6 +1265,7 @@ def update_parameters(model, data_json):
     Output('current-generation-store', 'data'),
     Output('bn-model-store', 'data'),
     Output('inference-results-display', 'children'),
+    Output('notification-store', 'data', allow_duplicate=True),
 
     Input('run-button', 'n_clicks'),
     Input('prev-step-button', 'n_clicks'),
@@ -1087,82 +1326,152 @@ def handle_model_run_and_navigation(
     current_generation_out = current_generation
     bn_model_data_out = bn_model_data
     inference_results_out = dash.no_update  # Don't change inference results by default
+    notification_out = None  # Default: no notification
 
     # RUN MODEL
     if button_id == 'run-button':
         if data_json is None:
-            print("No data uploaded.")
-            return (dash.no_update,)*5
+            error_msg = "No dataset uploaded. Please upload a dataset or select the default option."
+            logger.error("Attempted to run model without dataset")
+            notification_out = show_error(error_msg, "No Dataset")
+            return (dash.no_update,)*6 + (notification_out,)
 
-        df = pd.read_json(io.StringIO(data_json), orient='split')
+        try:
+            logger.info(f"Starting model execution: {model}")
+            df = pd.read_json(io.StringIO(data_json), orient='split')
+            
+            # Validate model selection
+            if not model:
+                error_msg = "Please select a model before running."
+                logger.error("No model selected")
+                notification_out = show_error(error_msg, "No Model Selected")
+                return (dash.no_update,)*6 + (notification_out,)
+                
+        except Exception as e:
+            error_msg = f"Error loading dataset: {str(e)}"
+            logger.error(f"Dataset loading error: {e}")
+            notification_out = show_error(error_msg, "Dataset Error")
+            return (dash.no_update,)*6 + (notification_out,)
         
         # CLEAR PREVIOUS INFERENCE STATE when running new model
         bn_model_data_out = None
         
         # NB or TAN
         if model in ['Naive Bayes', 'TAN']:
-            class_variable = class_variable_nb_tan
-            if not class_variable:
-                print("Class variable not selected.")
-                return (dash.no_update,)*5
-            if isinstance(class_variable, dict):
-                class_variable = class_variable.get("value", None)
+            try:
+                class_variable = class_variable_nb_tan
+                if not class_variable:
+                    error_msg = "Please select a class variable for the model."
+                    logger.error("Class variable not selected for NB/TAN")
+                    notification_out = show_error(error_msg, "Missing Class Variable")
+                    return (dash.no_update,)*6 + (notification_out,)
+                    
+                if isinstance(class_variable, dict):
+                    class_variable = class_variable.get("value", None)
+                
+                # Validate class variable exists in dataset
+                if class_variable not in df.columns:
+                    error_msg = f"Selected class variable '{class_variable}' not found in dataset."
+                    logger.error(f"Class variable {class_variable} not in dataset columns")
+                    notification_out = show_error(error_msg, "Invalid Class Variable")
+                    return (dash.no_update,)*6 + (notification_out,)
 
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as tmp_file:
-                df.to_csv(tmp_file.name, index=False)
-                csv_path = tmp_file.name
+                logger.info(f"Running {model} with class variable: {class_variable}")
+                
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as tmp_file:
+                    df.to_csv(tmp_file.name, index=False)
+                    csv_path = tmp_file.name
 
-            jump_steps = jump_steps or 0
-            selection_parameter = selection_parameter or 'Mutual Information'
-            no_steps = no_steps or []
+                jump_steps = jump_steps or 0
+                selection_parameter = selection_parameter or 'Mutual Information'
+                no_steps = no_steps or []
 
-            if model == 'Naive Bayes':
-                figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
-            else:
-                figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
+                if model == 'Naive Bayes':
+                    figures_list = NB_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
+                else:
+                    figures_list = NB_TAN_k_fold_with_steps(jump_steps, selection_parameter, csv_path, class_variable)
 
-            skip_all = ('yes' in no_steps)
-            model_results_data_out = {
-                'figures_list': serialize_figures_list(figures_list),
-                'no_steps': skip_all
-            }
-            if skip_all:
-                current_step_out = len(figures_list) - 1
-            else:
-                current_step_out = 0
-            
-            # Clear EDAs results when running NB/TAN
-            edas_results_data_out = None
-            current_generation_out = None
+                skip_all = ('yes' in no_steps)
+                model_results_data_out = {
+                    'figures_list': serialize_figures_list(figures_list),
+                    'no_steps': skip_all
+                }
+                if skip_all:
+                    current_step_out = len(figures_list) - 1
+                else:
+                    current_step_out = 0
+                
+                # Clear EDAs results when running NB/TAN
+                edas_results_data_out = None
+                current_generation_out = None
+                
+                success_msg = f"{model} model completed successfully with {len(figures_list)} steps."
+                logger.info(f"Successfully completed {model} execution")
+                notification_out = show_success(success_msg, "Model Completed")
+                
+            except Exception as e:
+                error_msg = f"Error running {model} model: {str(e)}"
+                logger.error(f"Exception in {model} execution: {e}")
+                notification_out = show_error(error_msg, f"{model} Error")
+                return (dash.no_update,)*6 + (notification_out,)
 
         # EDAs
         elif model == 'EDAs':
-            class_variable = class_variable_edas
-            if class_variable is None:
-                print("Class variable not selected.")
-                return (dash.no_update,)*5
+            try:
+                class_variable = class_variable_edas
+                if class_variable is None:
+                    error_msg = "Please select a class variable for EDAs model."
+                    logger.error("Class variable not selected for EDAs")
+                    notification_out = show_error(error_msg, "Missing Class Variable")
+                    return (dash.no_update,)*6 + (notification_out,)
+                
+                # Validate class variable exists in dataset
+                if class_variable not in df.columns:
+                    error_msg = f"Selected class variable '{class_variable}' not found in dataset."
+                    logger.error(f"Class variable {class_variable} not in dataset columns")
+                    notification_out = show_error(error_msg, "Invalid Class Variable")
+                    return (dash.no_update,)*6 + (notification_out,)
 
-            n_generations = n_generations or 1
-            n_individuals = n_individuals or 10
-            n_candidates = n_candidates or 5
-            fitness_metric = fitness_metric or 'Accuracy'
+                n_generations = n_generations or 1
+                n_individuals = n_individuals or 10
+                n_candidates = n_candidates or 5
+                fitness_metric = fitness_metric or 'Accuracy'
+                
+                # Validate parameters
+                if n_candidates > n_individuals:
+                    error_msg = "Number of candidates cannot exceed number of individuals."
+                    logger.error(f"Invalid parameters: candidates ({n_candidates}) > individuals ({n_individuals})")
+                    notification_out = show_error(error_msg, "Invalid Parameters")
+                    return (dash.no_update,)*6 + (notification_out,)
 
-            csv_string = df.to_csv(index=False)
-            csv_buffer = io.StringIO(csv_string)
-            umda = UMDA(n_candidates, n_individuals, n_generations, 
-                        csv_buffer, class_variable, fitness_metric)
-            best_results, generation_information = umda.execute_umda()
+                logger.info(f"Running EDAs with {n_generations} generations, {n_individuals} individuals, class: {class_variable}")
 
-            edas_results_data_out = {
-                'umda': serialize_umda(umda, data_json),
-                'best_results': [serialize_solution(sol) for sol in best_results],
-                'generation_information': serialize_generation_information(generation_information)
-            }
-            current_generation_out = None  # show best solution first
-            
-            # Clear NB/TAN results when running EDAs
-            model_results_data_out = None
-            current_step_out = None
+                csv_string = df.to_csv(index=False)
+                csv_buffer = io.StringIO(csv_string)
+                umda = UMDA(n_candidates, n_individuals, n_generations, 
+                            csv_buffer, class_variable, fitness_metric)
+                best_results, generation_information = umda.execute_umda()
+
+                edas_results_data_out = {
+                    'umda': serialize_umda(umda, data_json),
+                    'best_results': [serialize_solution(sol) for sol in best_results],
+                    'generation_information': serialize_generation_information(generation_information)
+                }
+                current_generation_out = None  # show best solution first
+                
+                # Clear NB/TAN results when running EDAs
+                model_results_data_out = None
+                current_step_out = None
+                
+                success_msg = f"EDAs model completed successfully with {n_generations} generations."
+                logger.info(f"Successfully completed EDAs execution")
+                notification_out = show_success(success_msg, "EDAs Completed")
+                
+            except Exception as e:
+                error_msg = f"Error running EDAs model: {str(e)}"
+                logger.error(f"Exception in EDAs execution: {e}")
+                notification_out = show_error(error_msg, "EDAs Error")
+                return (dash.no_update,)*6 + (notification_out,)
 
     # NB/TAN STEP NAV
     elif button_id in ['prev-step-button', 'next-step-button']:
@@ -1226,15 +1535,17 @@ def handle_model_run_and_navigation(
         edas_results_data_out,
         current_generation_out,
         bn_model_data_out,
-        inference_results_out
+        inference_results_out,
+        notification_out
     )
 
 
 # ----------------------------------------------------------------------------
-# (D) Inference callback
+# (D) Inference callback with error handling
 # ----------------------------------------------------------------------------
 @app.callback(
     Output('inference-results-display', 'children', allow_duplicate=True),
+    Output('notification-store', 'data', allow_duplicate=True),
     Input('calculate-inference-button', 'n_clicks'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'value'),
     State({'type': 'evidence-dropdown', 'index': dash.ALL}, 'id'),
@@ -1244,24 +1555,47 @@ def handle_model_run_and_navigation(
 def perform_inference(n_clicks, evidence_values, evidence_ids, bn_model_data):
     if bn_model_data is None:
         raise dash.exceptions.PreventUpdate
-    bn = deserialize_bayesnet(bn_model_data)
+        
+    try:
+        logger.info("Starting inference calculation")
+        bn = deserialize_bayesnet(bn_model_data)
 
-    evidence = {}
-    for val, id_dict in zip(evidence_values, evidence_ids):
-        if val != '':
-            var = id_dict['index']
-            evidence[var] = val
+        evidence = {}
+        for val, id_dict in zip(evidence_values, evidence_ids):
+            if val != '':
+                var = id_dict['index']
+                evidence[var] = val
 
-    tuple_list = [(var, evidence.get(var, '')) for var in bn.names()]
-    figure = get_inference_graph(bn, tuple_list)
-    img = fig_to_base64_image(figure)
+        logger.info(f"Evidence set: {evidence}")
+        
+        tuple_list = [(var, evidence.get(var, '')) for var in bn.names()]
+        figure = get_inference_graph(bn, tuple_list)
+        img = fig_to_base64_image(figure)
 
-    return html.Div([
-        html.H3('Inference Results', style={'textAlign': 'center'}),
-        html.Img(src='data:image/png;base64,{}'.format(img), 
-                 className="zoomable", 
-                 style={'display': 'block', 'margin': '0 auto'}),
-    ])
+        success_msg = "Inference calculation completed successfully."
+        logger.info("Inference completed successfully")
+        
+        return (
+            html.Div([
+                html.H3('Inference Results', style={'textAlign': 'center'}),
+                html.Img(src='data:image/png;base64,{}'.format(img), 
+                         className="zoomable", 
+                         style={'display': 'block', 'margin': '0 auto'}),
+            ]),
+            show_success(success_msg, "Inference Complete")
+        )
+        
+    except Exception as e:
+        error_msg = f"Error performing inference: {str(e)}"
+        logger.error(f"Inference error: {e}")
+        
+        return (
+            html.Div([
+                html.H3('Inference Error', style={'textAlign': 'center', 'color': 'red'}),
+                html.P(error_msg, style={'textAlign': 'center', 'color': 'red'})
+            ]),
+            show_error(error_msg, "Inference Error")
+        )
 
 
 # ----------------------------------------------------------------------------
@@ -1667,6 +2001,57 @@ def deserialize_bayesnet(serialized_bn):
         bn.cpt(node_id).fillWith([float(x) for x in flat_cpt_list])
 
     return bn
+
+########################################################################
+# Notification callback (similar to MRE)
+########################################################################
+
+@app.callback(
+    [Output('notification-container', 'children'),
+     Output('notification-container', 'style')],
+    Input('notification-store', 'data')
+)
+def show_notification(data):
+    if data is None:
+        return None, {
+            'position': 'fixed',
+            'bottom': '20px',
+            'right': '20px',
+            'zIndex': '1000',
+            'width': '300px',
+            'transition': 'all 0.3s ease-in-out',
+            'transform': 'translateY(100%)',
+            'opacity': '0'
+        }
+    
+    # Create toast with animation
+    toast = dbc.Toast(
+        data['message'],
+        header=data['header'],
+        icon=data['icon'],
+        is_open=True,
+        dismissable=True,
+        style={
+            'width': '100%',
+            'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+            'borderRadius': '8px',
+            'marginBottom': '10px'
+        }
+    )
+    
+    # Style to show notification with animation
+    container_style = {
+        'position': 'fixed',
+        'bottom': '20px',
+        'right': '20px',
+        'zIndex': '1000',
+        'width': '300px',
+        'transition': 'all 0.3s ease-in-out',
+        'transform': 'translateY(0)',
+        'opacity': '1'
+    }
+    
+    return toast, container_style
 
 ########################################################################
 # 4) Run the server
