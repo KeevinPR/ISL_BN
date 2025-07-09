@@ -386,7 +386,16 @@ app.layout = html.Div([
             # (B) Model selection
             ########################################################
             html.Div(className="card", children=[
-                html.H3("2. Select Model", style={'textAlign': 'center'}),
+                html.Div([
+                    html.H3("2. Select Model", style={"display": "inline-block", "marginRight": "10px", "textAlign": "center"}),
+                    # Add help button right after the title
+                    dbc.Button(
+                        html.I(className="fa fa-question-circle"),
+                        id="help-button-model-selection",
+                        color="link",
+                        style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                    ),
+                ], style={"textAlign": "center", "position": "relative"}),
             
                 dbc.Select(
                     id='model-dropdown',
@@ -430,7 +439,16 @@ app.layout = html.Div([
                     ),
                 ], style={'textAlign': 'center', 'marginBottom': '10px'}),
                 html.Div([
-                    html.Label('Selection parameter:'),
+                    html.Div([
+                        html.Label('Selection parameter:', style={'display': 'inline-block', 'marginRight': '10px'}),
+                        dbc.Button(
+                            html.I(className="fa fa-question-circle"),
+                            id="help-button-selection-parameter",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], style={'display': 'inline-block', 'marginBottom': '5px'}),
+                    html.Br(),
                     dbc.Select(
                         id='selection-parameter',
                         options=[
@@ -513,7 +531,16 @@ app.layout = html.Div([
                     ),
                 ], style={'textAlign': 'center', 'marginBottom': '10px'}),
                 html.Div([
-                    html.Label('Fitness metric:'),
+                    html.Div([
+                        html.Label('Fitness metric:', style={'display': 'inline-block', 'marginRight': '10px'}),
+                        dbc.Button(
+                            html.I(className="fa fa-question-circle"),
+                            id="help-button-fitness-metric",
+                            color="link",
+                            style={"display": "inline-block", "verticalAlign": "middle", "padding": "0", "marginLeft": "5px"}
+                        ),
+                    ], style={'display': 'inline-block', 'marginBottom': '5px'}),
+                    html.Br(),
                     dbc.Select(
                         id='fitness-metric',
                         options=[
@@ -816,6 +843,123 @@ app.layout = html.Div([
         trigger="hover",
         style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
     ),
+    # Popover for Model Selection
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Bayesian Network Models",
+                    html.I(className="fa fa-brain ms-2", style={"color": "#6f42c1"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li(
+                            children=[
+                                html.Strong("Naive Bayes: "),
+                                "Simple model assuming feature independence given the class."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("TAN: "),
+                                "Tree Augmented Naive Bayes allows tree-structured dependencies between features."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("EDAs: "),
+                                "Evolutionary algorithm for optimal Markov Blanket selection around the class variable."
+                            ]
+                        ),
+                    ]),
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "300px"}
+            ),
+        ],
+        id="help-popover-model-selection",
+        target="help-button-model-selection",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+        style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
+    ),
+    # Popover for Selection Parameter
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Selection Criteria",
+                    html.I(className="fa fa-chart-line ms-2", style={"color": "#fd7e14"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li(
+                            children=[
+                                html.Strong("Mutual Information: "),
+                                "Measures information shared between variables. Higher values indicate stronger dependencies."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("Score: "),
+                                "Model quality metric (e.g., AIC) balancing fit and complexity. Lower values are better."
+                            ]
+                        ),
+                    ]),
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "300px"}
+            ),
+        ],
+        id="help-popover-selection-parameter",
+        target="help-button-selection-parameter",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+        style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
+    ),
+    # Popover for Fitness Metric
+    dbc.Popover(
+        [
+            dbc.PopoverHeader(
+                [
+                    "Fitness Metrics",
+                    html.I(className="fa fa-trophy ms-2", style={"color": "#20c997"})
+                ],
+                style={"backgroundColor": "#f8f9fa", "fontWeight": "bold"}
+            ),
+            dbc.PopoverBody(
+                [
+                    html.Ul([
+                        html.Li(
+                            children=[
+                                html.Strong("Accuracy: "),
+                                "Classification performance metric. Higher accuracy means better predictive performance."
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                html.Strong("BIC: "),
+                                "Bayesian Information Criterion balances model fit and complexity. Lower BIC indicates better model."
+                            ]
+                        ),
+                    ]),
+                ],
+                style={"backgroundColor": "#ffffff", "borderRadius": "0 0 0.25rem 0.25rem", "maxWidth": "300px"}
+            ),
+        ],
+        id="help-popover-fitness-metric",
+        target="help-button-fitness-metric",
+        placement="right",
+        is_open=False,
+        trigger="hover",
+        style={"position": "absolute", "zIndex": 1000, "marginLeft": "5px"}
+    ),
     #future popovers here
 ])
 # Critical: Also set the validation_layout to the exact same layout
@@ -1035,6 +1179,39 @@ def toggle_popover_upload(n, is_open):
     State("help-popover-dataset-requirements", "is_open")
 )
 def toggle_dataset_requirements_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+# Callback for model selection popover
+@app.callback(
+    Output("help-popover-model-selection", "is_open"),
+    Input("help-button-model-selection", "n_clicks"),
+    State("help-popover-model-selection", "is_open")
+)
+def toggle_model_selection_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+# Callback for selection parameter popover
+@app.callback(
+    Output("help-popover-selection-parameter", "is_open"),
+    Input("help-button-selection-parameter", "n_clicks"),
+    State("help-popover-selection-parameter", "is_open")
+)
+def toggle_selection_parameter_popover(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+# Callback for fitness metric popover
+@app.callback(
+    Output("help-popover-fitness-metric", "is_open"),
+    Input("help-button-fitness-metric", "n_clicks"),
+    State("help-popover-fitness-metric", "is_open")
+)
+def toggle_fitness_metric_popover(n, is_open):
     if n:
         return not is_open
     return is_open
